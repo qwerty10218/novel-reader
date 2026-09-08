@@ -13,7 +13,7 @@ try { if (window.OpenCC) t2s = OpenCC.Converter({ from: 'tw', to: 'cn' }); } cat
 const FONT_SIZES = [18, 20, 22, 24];
 let currentChapterId = 1;
 let markdownCache = new Map();
-let settings = { fontSizeIdx: 0, fontFamily: 'sans', language: 'tw', mode: 'scroll' };
+let settings = { fontSizeIdx: 0, fontFamily: 'sans', language: 'tw', mode: 'page' }; // 預設改為翻頁模式
 let currentUser = null;
 let syncTimer = null;
 let isFlipping = false;
@@ -59,7 +59,8 @@ async function loadChapter(id) {
     const ch = CONFIG.chapters.find(c => c.id === id);
     if (!ch) return;
     currentChapterId = id;
-    contentEl.innerHTML = '<div class="loading-state">' + convert('載入中...') + '</div>';
+    contentEl.innerHTML = '<div class="loading-state" style="padding:40px;text-align:center;">' + convert('載入中...') + '</div>';
+    
     try {
         let md = markdownCache.get(id);
         if (!md) {
@@ -72,7 +73,9 @@ async function loadChapter(id) {
         window.scrollTo(0, 0); contentEl.scrollLeft = 0;
         localStorage.setItem('last_chapter_id', id);
         renderChapterList(); updateProgress(); schedulePush();
-    } catch (e) { contentEl.innerHTML = '<div class="error">' + convert('載入失敗') + '</div>'; }
+    } catch (e) {
+        contentEl.innerHTML = '<div class="error" style="padding:40px;color:red;text-align:center;">' + convert('載入失敗，請確認網路連線或是否使用 http://localhost 伺服器開啟。') + '</div>'; 
+    }
 }
 
 function loadSettings() {
@@ -109,14 +112,16 @@ function turnPage(direction) {
     const bookWidth = container.clientWidth;
     const isMobile = window.innerWidth < 800;
     
-    const maxScroll = contentEl.scrollWidth - bookWidth;
+    // 修正 maxScroll 邊界判定
+    const maxScroll = Math.max(0, contentEl.scrollWidth - bookWidth);
+    
     if (direction === 1 && contentEl.scrollLeft >= maxScroll - 5) {
         if (currentChapterId < CONFIG.chapters.length) loadChapter(currentChapterId + 1);
         return;
     }
     if (direction === -1 && contentEl.scrollLeft <= 5) {
         if (currentChapterId > 1) {
-            loadChapter(currentChapterId - 1).then(() => { setTimeout(() => { contentEl.scrollLeft = contentEl.scrollWidth; }, 50); });
+            loadChapter(currentChapterId - 1).then(() => { setTimeout(() => { contentEl.scrollLeft = contentEl.scrollWidth; }, 100); });
         }
         return;
     }
@@ -210,8 +215,40 @@ function do3DFlip(direction, currentScroll, targetScroll, isMobile, bookWidth) {
 }
 
 // ---- Supabase & Events ----
-async function pullCloud() { /* unchanged */ }
-function schedulePush() { /* unchanged */ }
+async function pullCloud() {
+    if (!db || !currentUser) return;
+    syncStatus.textContent = '↻ 同步中...';
+    try {
+        const { data } = await db.from('reading_progress')
+            .select('chapter_id, progress, updated_at')
+            .eq('reader_name', currentUser).single();
+        if (data) {
+            const local = parseInt(localStorage.getItem('last_sync_time') || '0');
+            const cloud = new Date(data.updated_at).getTime();
+            if (cloud > local) {
+                currentChapterId = data.chapter_id;
+                localStorage.setItem('last_chapter_id', currentChapterId);
+                localStorage.setItem('last_sync_time', cloud);
+            }
+        }
+        syncStatus.textContent = '✓ 已同步';
+    } catch(e) { syncStatus.textContent = '⚠ 離線模式'; }
+}
+
+function schedulePush() {
+    if (!db || !currentUser) return;
+    if (syncTimer) clearTimeout(syncTimer);
+    syncTimer = setTimeout(async () => {
+        try {
+            await db.from('reading_progress').upsert({
+                reader_name: currentUser, chapter_id: currentChapterId,
+                progress: getProgress(), updated_at: new Date().toISOString()
+            }, { onConflict: 'reader_name' });
+            localStorage.setItem('last_sync_time', Date.now());
+            syncStatus.textContent = '✓ 已同步';
+        } catch(e) { syncStatus.textContent = '⚠ 同步失敗'; }
+    }, 5000);
+}
 
 function bindEvents() {
     $('btn-login').onclick = async () => {
