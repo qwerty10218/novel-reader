@@ -13,7 +13,7 @@ try { if (window.OpenCC) t2s = OpenCC.Converter({ from: 'tw', to: 'cn' }); } cat
 const FONT_SIZES = [18, 20, 22, 24];
 let currentChapterId = 1;
 let markdownCache = new Map();
-let settings = { fontSizeIdx: 0, fontFamily: 'sans', language: 'tw', mode: 'page' }; // 預設改為翻頁模式
+let settings = { fontSizeIdx: 0, fontFamily: 'sans', language: 'tw', mode: 'page' };
 let currentUser = null;
 let syncTimer = null;
 let isFlipping = false;
@@ -34,11 +34,32 @@ const btnFontsize = $('btn-fontsize');
 
 async function init() {
     titleEl.textContent = CONFIG.novelTitle;
-    loadSettings(); applySettings(); bindEvents();
+    loadSettings(); 
+    applySettings(); 
+    bindEvents();
+    
     currentUser = localStorage.getItem('reader_name');
-    if (!currentUser) { showModal(loginModal); } else {
+    if (!currentUser) { 
+        showModal(loginModal); 
+    } else {
         $('display-username').textContent = currentUser;
-        await pullCloud(); renderChapterList(); await loadChapter(currentChapterId);
+        renderChapterList();
+        
+        // 確保 ID 是有效的，否則回退到第一章
+        if (!CONFIG.chapters.find(c => c.id === currentChapterId)) {
+            currentChapterId = CONFIG.chapters[0].id;
+        }
+        
+        // 背景同步，不阻塞 UI 載入
+        pullCloud().then(() => {
+            const cloudId = parseInt(localStorage.getItem('last_chapter_id'));
+            if (cloudId && cloudId !== currentChapterId) {
+                loadChapter(cloudId);
+            }
+        });
+        
+        // 立即載入本地章節
+        loadChapter(currentChapterId);
     }
 }
 
@@ -58,8 +79,10 @@ function renderChapterList() {
 async function loadChapter(id) {
     const ch = CONFIG.chapters.find(c => c.id === id);
     if (!ch) return;
+    
     currentChapterId = id;
-    contentEl.innerHTML = '<div class="loading-state" style="padding:40px;text-align:center;">' + convert('載入中...') + '</div>';
+    contentEl.style.visibility = 'visible'; // 確保內容可見
+    contentEl.innerHTML = '<div class="loading-state" style="padding:40px;text-align:center;color:#999;">' + convert('載入中...') + '</div>';
     
     try {
         let md = markdownCache.get(id);
@@ -70,17 +93,24 @@ async function loadChapter(id) {
             markdownCache.set(id, md);
         }
         contentEl.innerHTML = marked.parse(convert(md));
-        window.scrollTo(0, 0); contentEl.scrollLeft = 0;
+        window.scrollTo(0, 0); 
+        contentEl.scrollLeft = 0;
         localStorage.setItem('last_chapter_id', id);
-        renderChapterList(); updateProgress(); schedulePush();
+        renderChapterList(); 
+        updateProgress(); 
+        schedulePush();
     } catch (e) {
-        contentEl.innerHTML = '<div class="error" style="padding:40px;color:red;text-align:center;">' + convert('載入失敗，請確認網路連線或是否使用 http://localhost 伺服器開啟。') + '</div>'; 
+        console.error(e);
+        contentEl.innerHTML = '<div class="error" style="padding:40px;color:red;text-align:center;">' + convert('載入失敗：請確認網路，或是否阻擋了本地連線。') + '<br>' + e.message + '</div>'; 
     }
 }
 
 function loadSettings() {
     try { const s = JSON.parse(localStorage.getItem('reader_settings')); if(s) settings = {...settings, ...s}; } catch(e){}
-    const sid = localStorage.getItem('last_chapter_id'); if (sid) currentChapterId = parseInt(sid);
+    const sid = localStorage.getItem('last_chapter_id'); 
+    if (sid && !isNaN(parseInt(sid))) {
+        currentChapterId = parseInt(sid);
+    }
 }
 function saveSettings() { localStorage.setItem('reader_settings', JSON.stringify(settings)); }
 
@@ -112,7 +142,6 @@ function turnPage(direction) {
     const bookWidth = container.clientWidth;
     const isMobile = window.innerWidth < 800;
     
-    // 修正 maxScroll 邊界判定
     const maxScroll = Math.max(0, contentEl.scrollWidth - bookWidth);
     
     if (direction === 1 && contentEl.scrollLeft >= maxScroll - 5) {
@@ -254,7 +283,10 @@ function bindEvents() {
     $('btn-login').onclick = async () => {
         const name = $('input-username').value.trim(); if (!name) return;
         currentUser = name; localStorage.setItem('reader_name', name); $('display-username').textContent = name;
-        closeAll(); await pullCloud(); renderChapterList(); await loadChapter(currentChapterId);
+        closeAll(); 
+        pullCloud(); 
+        renderChapterList(); 
+        loadChapter(currentChapterId);
     };
     $('btn-logout').onclick = () => { localStorage.removeItem('reader_name'); location.reload(); };
 
