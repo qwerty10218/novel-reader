@@ -8,16 +8,33 @@
     --font-serif: "Songti TC", "PMingLiU", "SimSun", serif;
     --reader-font-size: 18px;
     --reader-line-height: 2.0;
-    --reader-max-width: 800px;
+    
+    /* 書本寬高變數 */
+    --book-width: 100vw;
+    --book-height: calc(100vh - 56px);
 }
+
+@media (min-width: 800px) {
+    :root {
+        --book-width: clamp(700px, 90vw, 1100px);
+        --book-height: calc(100vh - 120px);
+    }
+}
+@media (min-width: 1400px) {
+    :root { --book-width: 1300px; }
+}
+
 body.theme-sepia {
-    background-color: var(--bg-color);
-    background-image:
-        radial-gradient(circle at 50% 50%, rgba(0,0,0,0.02) 1px, transparent 1px),
-        radial-gradient(circle at 20% 80%, rgba(139, 90, 43, 0.03) 2px, transparent 2px);
-    background-size: 12px 12px, 30px 30px;
+    background-color: var(--bg-color); /* 滾動模式的底色 */
     color: var(--text-color);
 }
+/* 翻頁模式下，瀏覽器背景變成深色桌面 */
+body.theme-sepia.page-mode {
+    background-color: #24211e;
+    display: flex;
+    justify-content: center;
+}
+
 body.font-sans { font-family: var(--font-sans); }
 body.font-serif { font-family: var(--font-serif); }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -47,7 +64,7 @@ body { overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
 #progress-bar { height: 100%; width: 0%; background: var(--primary-color); transition: width 0.2s; }
 
 /* 閱讀區 (滾動模式預設) */
-#reader-container { margin: 80px auto 40px; padding: 0 20px; max-width: var(--reader-max-width); min-height: 80vh; }
+#reader-container { margin: 80px auto 40px; padding: 0 20px; max-width: 800px; min-height: 80vh; }
 #reader-content { font-size: var(--reader-font-size); line-height: var(--reader-line-height); text-align: justify; letter-spacing: 0.02em; }
 #reader-content p { margin-bottom: 1.8em; }
 #reader-content h1, #reader-content h2 { font-family: var(--font-serif); color: var(--primary-color); margin-top: 2em; margin-bottom: 1em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5em; }
@@ -78,63 +95,65 @@ body { overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
 .error { text-align: center; padding: 40px; color: #c44; }
 
 /* =========================================
-   翻頁模式重構：零間距 + 內部 Padding (無敵解法)
-   徹底解決容器邊界吃字、切字、滾動對齊誤差問題。
+   3D 實體書本翻頁模式
+   包含書脊凹陷、桌面陰影、真正 3D 翻轉
    ========================================= */
 
 body.page-mode::-webkit-scrollbar,
 body.page-mode #reader-content::-webkit-scrollbar { display: none; }
 
 body.page-mode #reader-container { 
-    margin: 56px 0 0 0; 
+    margin-top: calc(56px + (100vh - 56px - var(--book-height)) / 2);
+    width: var(--book-width);
+    height: var(--book-height);
     max-width: none; 
     padding: 0; 
-    height: calc(100vh - 56px); 
     overflow: hidden; 
+    position: relative;
+    /* 實體書本外觀 */
+    background-color: var(--bg-color);
+    background-image:
+        radial-gradient(circle at 50% 50%, rgba(0,0,0,0.02) 1px, transparent 1px),
+        radial-gradient(circle at 20% 80%, rgba(139, 90, 43, 0.03) 2px, transparent 2px);
+    border-radius: 4px 8px 8px 4px;
+    box-shadow: 
+        0 30px 60px rgba(0,0,0,0.5), /* 桌面深陰影 */
+        inset 0 0 40px rgba(139,90,43,0.1); /* 紙張邊緣舊化 */
+}
+
+/* 中央書脊凹陷 (僅在雙欄模式顯示) */
+@media (min-width: 800px) {
+    body.page-mode #reader-container::before {
+        content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 100px; transform: translateX(-50%);
+        background: linear-gradient(to right, 
+            rgba(0,0,0,0) 0%, rgba(0,0,0,0.04) 30%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.04) 70%, rgba(0,0,0,0) 100%);
+        pointer-events: none; z-index: 10;
+    }
+    body.page-mode #reader-container::after {
+        content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 1px;
+        background: rgba(0,0,0,0.08); box-shadow: 1px 0 2px rgba(255,255,255,0.3);
+        pointer-events: none; z-index: 11;
+    }
 }
 
 body.page-mode #reader-content {
-    height: 100%;
-    padding: 0;          /* 容器無 padding，避免 scrollLeft 抓取偏移 */
-    column-gap: 0;       /* 欄間距為 0，透過內部元素 padding 撐開留白 */
-    column-width: 100vw; /* 預設手機單欄，每欄等同螢幕寬 */
-    
-    overflow-x: auto; 
-    overflow-y: hidden; 
-    scroll-snap-type: x mandatory; 
-    scroll-behavior: smooth;
+    height: 100%; padding: 0; column-gap: 0;
+    column-width: 100vw; 
+    overflow-x: hidden; /* 交給 JS 控制，避免干擾 */
+    overflow-y: hidden;
 }
 
-/* 留白全部交給段落自己處理，這能保證 padding 絕對不會被滾動軸吃掉 */
-body.page-mode #reader-content > * {
-    padding: 0 25px; /* 手機版左右留白 25px */
-    break-inside: auto;
-}
-body.page-mode #reader-content h1, 
-body.page-mode #reader-content h2, 
-body.page-mode #reader-content h3 { break-after: avoid; }
-
-/* 給第一頁的頂部一點留白 */
+body.page-mode #reader-content > * { padding: 0 25px; break-inside: auto; }
+body.page-mode #reader-content h1, body.page-mode #reader-content h2, body.page-mode #reader-content h3 { break-after: avoid; }
 body.page-mode #reader-content > *:first-child { margin-top: 40px; }
-
 body.page-mode .bottom-nav { display: none; }
 
-/* 平板 / 一般電腦：雙欄書本 (適度留白) */
 @media (min-width: 800px) {
-    body.page-mode #reader-content { column-width: 50vw; }
-    body.page-mode #reader-content > * { padding: 0 50px; } /* 雙欄的中間間隔會是 50+50 = 100px */
+    body.page-mode #reader-content { column-width: calc(var(--book-width) / 2); }
+    body.page-mode #reader-content > * { padding: 0 50px; } 
 }
-
-/* 經典桌機：雙欄書本 (寬裕留白) */
 @media (min-width: 1200px) {
-    body.page-mode #reader-content { column-width: 50vw; }
-    body.page-mode #reader-content > * { padding: 0 80px; } /* 中間間隔 160px */
-}
-
-/* 超寬螢幕：雙欄書本 (極致留白，充滿呼吸感) */
-@media (min-width: 1600px) {
-    body.page-mode #reader-content { column-width: 50vw; }
-    body.page-mode #reader-content > * { padding: 0 15vw; } 
+    body.page-mode #reader-content > * { padding: 0 80px; } 
 }
 
 .page-click-zone { position: fixed; top: 56px; bottom: 0; width: 35%; z-index: 90; cursor: pointer; display: none; }
@@ -142,10 +161,51 @@ body.page-mode .page-click-zone { display: block; }
 .page-click-zone.left { left: 0; }
 .page-click-zone.right { right: 0; }
 
+/* ===== 3D Flip 動畫元件 ===== */
+.flip-wrapper {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 50; perspective: 2500px; overflow: hidden;
+    background-color: var(--bg-color); 
+    border-radius: inherit;
+}
+.flip-part { position: absolute; top: 0; height: 100%; overflow: hidden; background-color: var(--bg-color); }
+.flip-part.under-left { left: 0; width: 50%; }
+.flip-part.under-right { left: 50%; width: 50%; }
+.flip-part.mobile-under { left: 0; width: 100%; }
+
+.flipping-page {
+    position: absolute; top: 0; height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.65s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+.flipping-page.desktop-forward { left: 50%; width: 50%; transform-origin: left center; }
+.flipping-page.desktop-backward { left: 0; width: 50%; transform-origin: right center; }
+.flipping-page.mobile-forward { left: 0; width: 100%; transform-origin: left center; }
+.flipping-page.mobile-backward { left: 0; width: 100%; transform-origin: right center; }
+
+.flip-face {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    backface-visibility: hidden; overflow: hidden;
+    background-color: var(--bg-color);
+}
+.flip-face.back { transform: rotateY(180deg); }
+.flip-face.back::after {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.03); pointer-events: none;
+}
+.flipping-page::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 10px; height: 100%;
+    box-shadow: -15px 0 30px rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.3s;
+}
+.flipping-page.desktop-backward::before { left: auto; right: 0; box-shadow: 15px 0 30px rgba(0,0,0,0.3); }
+.flipping-page.animating::before { opacity: 1; }
+
+.clone-content { height: 100%; overflow: hidden; column-gap: 0; }
+
 /* RWD */
 @media (max-width: 600px) {
     #reader-container { padding: 0 16px; margin-top: 66px; }
-    body.page-mode #reader-container { margin-top: 56px; }
+    body.page-mode #reader-container { margin-top: 56px; padding: 0; border-radius: 0; }
     .toolbar { padding: 0 4px; }
     .novel-title { font-size: 0.95rem; }
     .toolbar-right { gap: 4px; }
