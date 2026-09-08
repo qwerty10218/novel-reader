@@ -89,6 +89,7 @@ async function loadChapter(id) {
         }
         contentEl.innerHTML = marked.parse(convert(md));
         window.scrollTo(0, 0);
+        contentEl.scrollLeft = 0;
         localStorage.setItem('last_chapter_id', id);
         renderChapterList();
         updateProgress();
@@ -114,7 +115,7 @@ function applySettings() {
     // body class
     document.body.className = 'theme-sepia font-' + settings.fontFamily + ' ' + settings.mode + '-mode';
 
-    // 更新按鈕文字，讓使用者一看就知道目前狀態
+    // 更新按鈕文字
     btnLang.textContent = settings.language === 'tw' ? '繁' : '簡';
     btnLang.classList.toggle('active', settings.language === 'cn');
 
@@ -124,8 +125,8 @@ function applySettings() {
     btnPage.textContent = settings.mode === 'scroll' ? '滾' : '翻';
     btnPage.classList.toggle('active', settings.mode === 'page');
 
-    // Aa 按鈕顯示目前字級
-    btnFontsize.textContent = fs + '';
+    // Aa 加上數字
+    btnFontsize.textContent = 'Aa ' + fs;
     btnFontsize.classList.toggle('active', settings.fontSizeIdx > 0);
 
     saveSettings();
@@ -141,6 +142,39 @@ function getProgress() {
     return w > 0 ? (contentEl.scrollLeft / w * 100) : 0;
 }
 function updateProgress() { $('progress-bar').style.width = getProgress() + '%'; }
+
+// ---- 翻頁邏輯 ----
+function turnPage(direction) {
+    if (settings.mode !== 'page') return;
+    const scrollAmount = window.innerWidth;
+    
+    // 如果是下一頁，且已經到底部，則切換到下一章
+    if (direction === 1) {
+        const maxScroll = contentEl.scrollWidth - contentEl.clientWidth;
+        if (contentEl.scrollLeft >= maxScroll - 10) {
+            if (currentChapterId < CONFIG.chapters.length) loadChapter(currentChapterId + 1);
+            return;
+        }
+    }
+    // 如果是上一頁，且已經在頂部，則切換到上一章
+    if (direction === -1) {
+        if (contentEl.scrollLeft <= 0) {
+            if (currentChapterId > 1) {
+                loadChapter(currentChapterId - 1).then(() => {
+                    setTimeout(() => { contentEl.scrollLeft = contentEl.scrollWidth; }, 50);
+                });
+            }
+            return;
+        }
+    }
+
+    const currentScroll = contentEl.scrollLeft;
+    let targetScroll = currentScroll + (direction * scrollAmount);
+    
+    // 強制對齊到視窗寬度，避免 CSS scroll-snap 算錯
+    targetScroll = Math.round(targetScroll / scrollAmount) * scrollAmount;
+    contentEl.scrollTo({ left: targetScroll, behavior: 'smooth' });
+}
 
 // ---- Supabase ----
 async function pullCloud() {
@@ -204,32 +238,22 @@ function bindEvents() {
     $('btn-prev-chap').onclick = () => { if (currentChapterId > 1) loadChapter(currentChapterId - 1); };
     $('btn-next-chap').onclick = () => { if (currentChapterId < CONFIG.chapters.length) loadChapter(currentChapterId + 1); };
 
-    // ====== 工具列按鈕：直接切換 ======
+    // 工具列按鈕
+    btnFontsize.onclick = () => { settings.fontSizeIdx = (settings.fontSizeIdx + 1) % FONT_SIZES.length; applySettings(); };
+    btnLang.onclick = () => { settings.language = (settings.language === 'tw') ? 'cn' : 'tw'; applySettings(); loadChapter(currentChapterId); };
+    btnFont.onclick = () => { settings.fontFamily = (settings.fontFamily === 'sans') ? 'serif' : 'sans'; applySettings(); };
+    btnPage.onclick = () => { settings.mode = (settings.mode === 'scroll') ? 'page' : 'scroll'; applySettings(); };
 
-    // Aa：按一下變大，到最大再按恢復預設
-    btnFontsize.onclick = () => {
-        settings.fontSizeIdx = (settings.fontSizeIdx + 1) % FONT_SIZES.length;
-        applySettings();
-    };
+    // 翻頁點擊區
+    $('zone-left').onclick = () => turnPage(-1);
+    $('zone-right').onclick = () => turnPage(1);
 
-    // 繁/簡：切換
-    btnLang.onclick = () => {
-        settings.language = (settings.language === 'tw') ? 'cn' : 'tw';
-        applySettings();
-        loadChapter(currentChapterId);
-    };
-
-    // 黑/明：切換
-    btnFont.onclick = () => {
-        settings.fontFamily = (settings.fontFamily === 'sans') ? 'serif' : 'sans';
-        applySettings();
-    };
-
-    // 滾/翻：切換
-    btnPage.onclick = () => {
-        settings.mode = (settings.mode === 'scroll') ? 'page' : 'scroll';
-        applySettings();
-    };
+    // 鍵盤
+    document.addEventListener('keydown', (e) => {
+        if (settings.mode !== 'page') return;
+        if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); turnPage(1); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); turnPage(-1); }
+    });
 
     // 滾動
     window.addEventListener('scroll', () => { updateProgress(); schedulePush(); });

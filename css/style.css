@@ -7,7 +7,7 @@
     --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-serif: "Songti TC", "PMingLiU", "SimSun", serif;
     --reader-font-size: 18px;
-    --reader-line-height: 2.0; /* 增加行距，更舒展 */
+    --reader-line-height: 2.0;
     --reader-max-width: 800px;
 }
 body.theme-sepia {
@@ -78,52 +78,63 @@ body { overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
 .error { text-align: center; padding: 40px; color: #c44; }
 
 /* =========================================
-   翻頁模式 (Page Mode)
-   廢除三欄報紙排版，改為「優雅雙欄書本排版」
-   公式：column-gap = 2 * 水平 padding
+   翻頁模式重構：零間距 + 內部 Padding (無敵解法)
+   徹底解決容器邊界吃字、切字、滾動對齊誤差問題。
    ========================================= */
 
 body.page-mode::-webkit-scrollbar,
 body.page-mode #reader-content::-webkit-scrollbar { display: none; }
-body.page-mode #reader-container { margin: 56px 0 0 0; max-width: none; padding: 0; height: calc(100vh - 56px); overflow: hidden; }
 
-/* 手機：單欄 */
+body.page-mode #reader-container { 
+    margin: 56px 0 0 0; 
+    max-width: none; 
+    padding: 0; 
+    height: calc(100vh - 56px); 
+    overflow: hidden; 
+}
+
 body.page-mode #reader-content {
     height: 100%;
-    padding: 30px 20px 50px 20px; 
-    column-gap: 40px; 
-    column-width: calc(100vw - 40px);
-    overflow-x: auto; overflow-y: hidden; 
-    scroll-snap-type: x mandatory; scroll-behavior: smooth;
+    padding: 0;          /* 容器無 padding，避免 scrollLeft 抓取偏移 */
+    column-gap: 0;       /* 欄間距為 0，透過內部元素 padding 撐開留白 */
+    column-width: 100vw; /* 預設手機單欄，每欄等同螢幕寬 */
+    
+    overflow-x: auto; 
+    overflow-y: hidden; 
+    scroll-snap-type: x mandatory; 
+    scroll-behavior: smooth;
 }
-body.page-mode #reader-content p, body.page-mode #reader-content h1, body.page-mode #reader-content h2, body.page-mode #reader-content h3 { break-inside: avoid; scroll-snap-align: start; }
+
+/* 留白全部交給段落自己處理，這能保證 padding 絕對不會被滾動軸吃掉 */
+body.page-mode #reader-content > * {
+    padding: 0 25px; /* 手機版左右留白 25px */
+    break-inside: auto;
+}
+body.page-mode #reader-content h1, 
+body.page-mode #reader-content h2, 
+body.page-mode #reader-content h3 { break-after: avoid; }
+
+/* 給第一頁的頂部一點留白 */
+body.page-mode #reader-content > *:first-child { margin-top: 40px; }
+
 body.page-mode .bottom-nav { display: none; }
 
-/* 平板 / 小筆電：雙欄書本 (適度留白) */
+/* 平板 / 一般電腦：雙欄書本 (適度留白) */
 @media (min-width: 800px) {
-    body.page-mode #reader-content {
-        padding: 50px 40px 60px 40px; 
-        column-gap: 80px; 
-        column-width: calc(50vw - 80px); 
-    }
+    body.page-mode #reader-content { column-width: 50vw; }
+    body.page-mode #reader-content > * { padding: 0 50px; } /* 雙欄的中間間隔會是 50+50 = 100px */
 }
 
 /* 經典桌機：雙欄書本 (寬裕留白) */
 @media (min-width: 1200px) {
-    body.page-mode #reader-content {
-        padding: 60px 80px 80px 80px; 
-        column-gap: 160px; 
-        column-width: calc(50vw - 160px); 
-    }
+    body.page-mode #reader-content { column-width: 50vw; }
+    body.page-mode #reader-content > * { padding: 0 80px; } /* 中間間隔 160px */
 }
 
 /* 超寬螢幕：雙欄書本 (極致留白，充滿呼吸感) */
 @media (min-width: 1600px) {
-    body.page-mode #reader-content {
-        padding: 80px 150px 100px 150px; 
-        column-gap: 300px; 
-        column-width: calc(50vw - 300px); 
-    }
+    body.page-mode #reader-content { column-width: 50vw; }
+    body.page-mode #reader-content > * { padding: 0 15vw; } 
 }
 
 .page-click-zone { position: fixed; top: 56px; bottom: 0; width: 35%; z-index: 90; cursor: pointer; display: none; }
