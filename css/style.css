@@ -7,7 +7,7 @@
     --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-serif: "Songti TC", "PMingLiU", "SimSun", serif;
     --reader-font-size: 18px;
-    --reader-line-height: 1.9;
+    --reader-line-height: 2.0; /* 增加行距，更舒展 */
     --reader-max-width: 800px;
 }
 body.theme-sepia {
@@ -25,7 +25,7 @@ body { overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
 
 /* 工具列 */
 .toolbar {
-    position: fixed; top: 0; left: 0; right: 0; height: 56px; /* 稍微加高一點容納大按鈕 */
+    position: fixed; top: 0; left: 0; right: 0; height: 56px;
     background: var(--toolbar-bg); border-bottom: 1px solid var(--border-color);
     display: flex; justify-content: space-between; align-items: center;
     padding: 0 10px; z-index: 100; backdrop-filter: blur(5px);
@@ -33,18 +33,11 @@ body { overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
 .novel-title { font-weight: bold; font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; text-align: center; padding: 0 10px; }
 .toolbar-right { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
 .icon-btn { background: none; border: none; font-size: 1.4rem; color: var(--text-color); cursor: pointer; padding: 6px; }
-
-/* 工具列按鈕放大 */
 .tool-btn {
     background: transparent; border: 1px solid var(--border-color);
-    color: var(--text-color); cursor: pointer; 
-    padding: 6px 12px; /* 增加內距 */
-    border-radius: 6px; 
-    font-size: 0.95rem; /* 字體放大 */
-    font-weight: bold;
-    transition: all 0.2s; white-space: nowrap; 
-    min-width: 40px; /* 保證寬度一致 */
-    text-align: center;
+    color: var(--text-color); cursor: pointer; padding: 6px 12px;
+    border-radius: 6px; font-size: 0.95rem; font-weight: bold;
+    transition: all 0.2s; white-space: nowrap; min-width: 40px; text-align: center;
 }
 .tool-btn:hover { background: rgba(0,0,0,0.05); }
 .tool-btn.active { background: var(--primary-color); color: var(--bg-color); border-color: var(--primary-color); }
@@ -53,10 +46,10 @@ body { overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
 #progress-container { position: fixed; top: 56px; left: 0; width: 100%; height: 3px; background: transparent; z-index: 99; }
 #progress-bar { height: 100%; width: 0%; background: var(--primary-color); transition: width 0.2s; }
 
-/* 閱讀區 */
+/* 閱讀區 (滾動模式預設) */
 #reader-container { margin: 80px auto 40px; padding: 0 20px; max-width: var(--reader-max-width); min-height: 80vh; }
-#reader-content { font-size: var(--reader-font-size); line-height: var(--reader-line-height); text-align: justify; }
-#reader-content p { margin-bottom: 1.5em; }
+#reader-content { font-size: var(--reader-font-size); line-height: var(--reader-line-height); text-align: justify; letter-spacing: 0.02em; }
+#reader-content p { margin-bottom: 1.8em; }
 #reader-content h1, #reader-content h2 { font-family: var(--font-serif); color: var(--primary-color); margin-top: 2em; margin-bottom: 1em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5em; }
 #reader-content h1 { font-size: 1.6em; text-align: center; border-bottom: none; }
 #reader-content h3 { color: var(--primary-color); margin-top: 1.5em; margin-bottom: 0.8em; }
@@ -84,22 +77,53 @@ body { overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
 .loading-state { text-align: center; padding: 40px; color: #999; }
 .error { text-align: center; padding: 40px; color: #c44; }
 
-/* 翻頁模式 (Page Mode) */
+/* =========================================
+   翻頁模式 (Page Mode)
+   廢除三欄報紙排版，改為「優雅雙欄書本排版」
+   公式：column-gap = 2 * 水平 padding
+   ========================================= */
+
 body.page-mode::-webkit-scrollbar,
 body.page-mode #reader-content::-webkit-scrollbar { display: none; }
 body.page-mode #reader-container { margin: 56px 0 0 0; max-width: none; padding: 0; height: calc(100vh - 56px); overflow: hidden; }
+
+/* 手機：單欄 */
 body.page-mode #reader-content {
-    height: 100%; padding: 20px 20px 40px 20px; column-gap: 40px; column-width: calc(100vw - 40px);
-    overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-behavior: smooth;
+    height: 100%;
+    padding: 30px 20px 50px 20px; 
+    column-gap: 40px; 
+    column-width: calc(100vw - 40px);
+    overflow-x: auto; overflow-y: hidden; 
+    scroll-snap-type: x mandatory; scroll-behavior: smooth;
 }
 body.page-mode #reader-content p, body.page-mode #reader-content h1, body.page-mode #reader-content h2, body.page-mode #reader-content h3 { break-inside: avoid; scroll-snap-align: start; }
 body.page-mode .bottom-nav { display: none; }
 
+/* 平板 / 小筆電：雙欄書本 (適度留白) */
 @media (min-width: 800px) {
-    body.page-mode #reader-content { padding: 40px 40px 60px 40px; column-gap: 80px; column-width: calc(50vw - 80px); }
+    body.page-mode #reader-content {
+        padding: 50px 40px 60px 40px; 
+        column-gap: 80px; 
+        column-width: calc(50vw - 80px); 
+    }
 }
-@media (min-width: 1400px) {
-    body.page-mode #reader-content { padding: 40px 60px 60px 60px; column-gap: 120px; column-width: calc(33.333vw - 120px); }
+
+/* 經典桌機：雙欄書本 (寬裕留白) */
+@media (min-width: 1200px) {
+    body.page-mode #reader-content {
+        padding: 60px 80px 80px 80px; 
+        column-gap: 160px; 
+        column-width: calc(50vw - 160px); 
+    }
+}
+
+/* 超寬螢幕：雙欄書本 (極致留白，充滿呼吸感) */
+@media (min-width: 1600px) {
+    body.page-mode #reader-content {
+        padding: 80px 150px 100px 150px; 
+        column-gap: 300px; 
+        column-width: calc(50vw - 300px); 
+    }
 }
 
 .page-click-zone { position: fixed; top: 56px; bottom: 0; width: 35%; z-index: 90; cursor: pointer; display: none; }
@@ -114,7 +138,6 @@ body.page-mode .page-click-zone { display: block; }
     .toolbar { padding: 0 4px; }
     .novel-title { font-size: 0.95rem; }
     .toolbar-right { gap: 4px; }
-    /* 手機上微調小一點，避免爆版 */
     .tool-btn { padding: 5px 8px; font-size: 0.85rem; min-width: 32px; }
     .icon-btn { font-size: 1.2rem; padding: 4px; }
     .drawer { width: 85vw; left: -85vw; }
