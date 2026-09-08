@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>彼岸仍是人間</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="theme-sepia font-sans scroll-mode">
+    <header id="topbar" class="toolbar">
+        <button id="btn-menu" class="icon-btn" aria-label="章節目錄">☰</button>
+        <div class="novel-title" id="topbar-title">彼岸仍是人間</div>
+        <div class="toolbar-right">
+            <button id="btn-lang" class="tool-btn" aria-label="繁簡轉換">繁</button>
+            <button id="btn-font" class="tool-btn" aria-label="字型切換">黑</button>
+            <button id="btn-page" class="tool-btn" aria-label="閱讀模式">滾</button>
+            <button id="btn-fontsize" class="tool-btn" aria-label="字體大小">Aa</button>
+            <button id="btn-user" class="icon-btn" aria-label="我的閱讀">👤</button>
+        </div>
+    </header>
+    <div id="progress-container"><div id="progress-bar"></div></div>
+    <main id="reader-container">
+        <article id="reader-content"><div class="loading-state">載入中...</div></article>
+        <nav class="bottom-nav">
+            <button id="btn-prev-chap" class="btn">上一章</button>
+            <button id="btn-next-chap" class="btn">下一章</button>
+        </nav>
+    </main>
+    <div id="drawer-menu" class="drawer">
+        <div class="drawer-header"><h3>目錄</h3><button id="btn-close-menu" class="icon-btn">✕</button></div>
+        <div class="drawer-content" id="chapter-list"></div>
+    </div>
+    <div id="login-modal" class="modal">
+        <div class="modal-header"><h3>歡迎閱讀</h3></div>
+        <div class="modal-content" style="text-align:center">
+            <p style="margin-bottom:20px">請輸入暱稱，系統會自動保存閱讀進度。</p>
+            <input type="text" id="input-username" placeholder="你的暱稱" style="width:100%;padding:10px;margin-bottom:20px;border:1px solid var(--border-color);border-radius:4px;background:transparent;color:var(--text-color);font-size:16px">
+            <button id="btn-login" class="btn" style="width:100%">開始閱讀</button>
+        </div>
+    </div>
+    <div id="user-modal" class="modal">
+        <div class="modal-header"><h3>我的閱讀</h3><button id="btn-close-user" class="icon-btn">✕</button></div>
+        <div class="modal-content">
+            <div style="margin-bottom:20px"><strong>暱稱：</strong><span id="display-username">讀者</span></div>
+            <div style="margin-bottom:20px"><strong>同步狀態：</strong><span id="display-sync-status" style="color:#6a994e">✓ 已同步</span></div>
+            <button id="btn-logout" class="btn" style="width:100%">更換暱稱</button>
+        </div>
+    </div>
+    <div id="overlay" class="overlay"></div>
+    <script src="js/config.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>
