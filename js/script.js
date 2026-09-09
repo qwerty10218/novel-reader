@@ -32,34 +32,35 @@ const btnFont     = $('btn-font');
 const btnPage     = $('btn-page');
 const btnFontsize = $('btn-fontsize');
 
+// ---- 初始化 (保證秒開，絕對不卡載入) ----
 async function init() {
     titleEl.textContent = CONFIG.novelTitle;
     loadSettings(); 
     applySettings(); 
     bindEvents();
     
-    currentUser = localStorage.getItem('reader_name');
-    if (!currentUser) { 
-        showModal(loginModal); 
-    } else {
-        $('display-username').textContent = currentUser;
-        renderChapterList();
-        
-        // 確保 ID 是有效的，否則回退到第一章
-        if (!CONFIG.chapters.find(c => c.id === currentChapterId)) {
-            currentChapterId = CONFIG.chapters[0].id;
-        }
-        
-        // 背景同步，不阻塞 UI 載入
+    // 預設讀者暱稱，絕不強制彈出登入框卡死閱讀
+    currentUser = localStorage.getItem('reader_name') || '讀者';
+    $('display-username').textContent = currentUser;
+    
+    // 確保當前章節有效
+    if (!CONFIG.chapters.find(c => c.id === currentChapterId)) {
+        currentChapterId = CONFIG.chapters[0].id;
+    }
+    
+    renderChapterList();
+    
+    // 第一時間立即載入本地章節，渲染小說正文
+    await loadChapter(currentChapterId);
+    
+    // 若使用者曾輸入過自訂暱稱，於背景靜默同步進度
+    if (localStorage.getItem('reader_name')) {
         pullCloud().then(() => {
             const cloudId = parseInt(localStorage.getItem('last_chapter_id'));
             if (cloudId && cloudId !== currentChapterId) {
                 loadChapter(cloudId);
             }
-        });
-        
-        // 立即載入本地章節
-        loadChapter(currentChapterId);
+        }).catch(() => {});
     }
 }
 
@@ -76,22 +77,24 @@ function renderChapterList() {
     });
 }
 
+// ---- 載入章節正文 ----
 async function loadChapter(id) {
     const ch = CONFIG.chapters.find(c => c.id === id);
     if (!ch) return;
     
     currentChapterId = id;
-    contentEl.style.visibility = 'visible'; // 確保內容可見
-    contentEl.innerHTML = '<div class="loading-state" style="padding:40px;text-align:center;color:#999;">' + convert('載入中...') + '</div>';
+    contentEl.style.visibility = 'visible';
+    contentEl.innerHTML = '<div class="loading-state">' + convert('章節載入中...') + '</div>';
     
     try {
         let md = markdownCache.get(id);
         if (!md) {
             const res = await fetch(ch.file);
-            if (!res.ok) throw new Error(res.status);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
             md = await res.text();
             markdownCache.set(id, md);
         }
+        
         contentEl.innerHTML = marked.parse(convert(md));
         window.scrollTo(0, 0); 
         contentEl.scrollLeft = 0;
@@ -101,7 +104,9 @@ async function loadChapter(id) {
         schedulePush();
     } catch (e) {
         console.error(e);
-        contentEl.innerHTML = '<div class="error" style="padding:40px;color:red;text-align:center;">' + convert('載入失敗：請確認網路，或是否阻擋了本地連線。') + '<br>' + e.message + '</div>'; 
+        contentEl.innerHTML = '<div class="error">' + 
+            convert('無法載入章節內容。') + '<br><small style="color:#888;">' + e.message + '</small>' +
+            '<br><button class="btn" onclick="loadChapter(' + id + ')" style="margin-top:15px;">' + convert('重新嘗試') + '</button></div>'; 
     }
 }
 
@@ -135,7 +140,7 @@ function getProgress() {
 }
 function updateProgress() { $('progress-bar').style.width = getProgress() + '%'; }
 
-// ---- 真正的 3D 翻頁引擎 ----
+// ---- 真正的 3D 翻頁物理引擎 (像素級切片定位，絕不串頁) ----
 function turnPage(direction) {
     if (settings.mode !== 'page' || isFlipping) return;
     const container = $('reader-container');
@@ -144,108 +149,142 @@ function turnPage(direction) {
     
     const maxScroll = Math.max(0, contentEl.scrollWidth - bookWidth);
     
-    if (direction === 1 && contentEl.scrollLeft >= maxScroll - 5) {
-        if (currentChapterId < CONFIG.chapters.length) loadChapter(currentChapterId + 1);
+    // 如果在章節末尾且按下一頁 -> 進入下一章
+    if (direction === 1 && contentEl.scrollLeft >= maxScroll - 8) {
+        if (currentChapterId < CONFIG.chapters.length) {
+            loadChapter(currentChapterId + 1);
+        }
         return;
     }
-    if (direction === -1 && contentEl.scrollLeft <= 5) {
+    // 如果在章節頂部且按上一頁 -> 進入上一章
+    if (direction === -1 && contentEl.scrollLeft <= 8) {
         if (currentChapterId > 1) {
-            loadChapter(currentChapterId - 1).then(() => { setTimeout(() => { contentEl.scrollLeft = contentEl.scrollWidth; }, 100); });
+            loadChapter(currentChapterId - 1).then(() => {
+                setTimeout(() => { contentEl.scrollLeft = contentEl.scrollWidth; }, 80);
+            });
         }
         return;
     }
 
     const currentScroll = contentEl.scrollLeft;
     let targetScroll = currentScroll + (direction * bookWidth);
-    targetScroll = Math.round(targetScroll / bookWidth) * bookWidth;
+    targetScroll = Math.max(0, Math.min(maxScroll, Math.round(targetScroll / bookWidth) * bookWidth));
+
+    if (targetScroll === currentScroll) return;
 
     do3DFlip(direction, currentScroll, targetScroll, isMobile, bookWidth);
+}
+
+// 建立無失真像素切片
+function createSlice(leftOffset, sliceWidth) {
+    const mask = document.createElement('div');
+    mask.style.cssText = 'position:relative;width:' + sliceWidth + 'px;height:100%;overflow:hidden;background-color:var(--bg-color);';
+    
+    const inner = document.createElement('div');
+    inner.className = 'slice-wrapper theme-sepia font-' + settings.fontFamily;
+    inner.innerHTML = contentEl.innerHTML;
+    
+    const comp = window.getComputedStyle(contentEl);
+    inner.style.width = contentEl.scrollWidth + 'px';
+    inner.style.height = contentEl.clientHeight + 'px';
+    inner.style.columnWidth = comp.columnWidth;
+    inner.style.fontSize = comp.fontSize;
+    inner.style.lineHeight = comp.lineHeight;
+    inner.style.textAlign = comp.textAlign;
+    inner.style.letterSpacing = comp.letterSpacing;
+    inner.style.left = (-leftOffset) + 'px';
+    
+    mask.appendChild(inner);
+    return mask;
 }
 
 function do3DFlip(direction, currentScroll, targetScroll, isMobile, bookWidth) {
     isFlipping = true;
     const container = $('reader-container');
     
-    const wrapper = document.createElement('div');
-    wrapper.className = 'flip-wrapper';
-    
-    const createFace = (scroll, shift) => {
-        const face = document.createElement('div');
-        face.className = 'flip-face';
-        const clone = contentEl.cloneNode(true);
-        clone.removeAttribute('id');
-        clone.className = 'clone-content';
-        clone.style.columnWidth = isMobile ? `${bookWidth}px` : `${bookWidth / 2}px`;
-        clone.style.transform = `translateX(-${shift}px)`;
-        face.appendChild(clone);
-        return { face, clone };
-    };
+    // 安全定時器：確保 isFlipping 絕對不會被卡死
+    const safetyTimer = setTimeout(() => { isFlipping = false; }, 1200);
 
-    let flippingPage = document.createElement('div');
-    flippingPage.className = `flipping-page ${isMobile ? (direction === 1 ? 'mobile-forward' : 'mobile-backward') : (direction === 1 ? 'desktop-forward' : 'desktop-backward')}`;
-    
-    let partsToScroll = [];
+    const stage = document.createElement('div');
+    stage.className = 'flip-stage';
+
+    let leaf = document.createElement('div');
+    let frontFace = document.createElement('div');
+    frontFace.className = 'leaf-face front';
+    let backFace = document.createElement('div');
+    backFace.className = 'leaf-face back';
 
     if (!isMobile) {
-        const halfWidth = bookWidth / 2;
-        
-        const underLeft = document.createElement('div'); underLeft.className = 'flip-part under-left';
-        const cl1 = contentEl.cloneNode(true); cl1.className = 'clone-content'; cl1.style.columnWidth = `${halfWidth}px`;
-        underLeft.appendChild(cl1); partsToScroll.push({ el: cl1, val: direction === 1 ? currentScroll : targetScroll });
-        
-        const underRight = document.createElement('div'); underRight.className = 'flip-part under-right';
-        const cl2 = contentEl.cloneNode(true); cl2.className = 'clone-content'; cl2.style.columnWidth = `${halfWidth}px`; cl2.style.transform = `translateX(-${halfWidth}px)`;
-        underRight.appendChild(cl2); partsToScroll.push({ el: cl2, val: direction === 1 ? targetScroll : currentScroll });
+        // 電腦版雙頁模式 (書本左右對開)
+        const halfWidth = Math.floor(bookWidth / 2);
 
-        wrapper.appendChild(underLeft); wrapper.appendChild(underRight);
+        // 1. 底層靜止頁面
+        const staticLeft = document.createElement('div');
+        staticLeft.className = 'static-page left';
+        const staticRight = document.createElement('div');
+        staticRight.className = 'static-page right';
 
-        const face1 = createFace(currentScroll, direction === 1 ? halfWidth : 0);
-        const face2 = createFace(targetScroll, direction === 1 ? 0 : halfWidth);
-        face2.face.classList.add('back');
-        flippingPage.appendChild(face1.face); flippingPage.appendChild(face2.face);
-        
-        partsToScroll.push({ el: face1.clone, val: currentScroll });
-        partsToScroll.push({ el: face2.clone, val: targetScroll });
+        if (direction === 1) { // 向前翻頁 (右頁向左掀起)
+            staticLeft.appendChild(createSlice(currentScroll, halfWidth));
+            staticRight.appendChild(createSlice(targetScroll + halfWidth, halfWidth));
+
+            leaf.className = 'flipping-leaf turn-next';
+            frontFace.appendChild(createSlice(currentScroll + halfWidth, halfWidth));
+            backFace.appendChild(createSlice(targetScroll, halfWidth));
+        } else { // 向後翻頁 (左頁向右掀回)
+            staticLeft.appendChild(createSlice(targetScroll, halfWidth));
+            staticRight.appendChild(createSlice(currentScroll + halfWidth, halfWidth));
+
+            leaf.className = 'flipping-leaf turn-prev';
+            frontFace.appendChild(createSlice(currentScroll, halfWidth));
+            backFace.appendChild(createSlice(targetScroll + halfWidth, halfWidth));
+        }
+
+        stage.appendChild(staticLeft);
+        stage.appendChild(staticRight);
     } else {
-        const under = document.createElement('div'); under.className = 'flip-part mobile-under';
-        const cl1 = contentEl.cloneNode(true); cl1.className = 'clone-content'; cl1.style.columnWidth = `${bookWidth}px`;
-        under.appendChild(cl1); partsToScroll.push({ el: cl1, val: targetScroll });
-        wrapper.appendChild(under);
+        // 手機版單頁模式
+        const staticFull = document.createElement('div');
+        staticFull.className = 'static-page full';
+        staticFull.appendChild(createSlice(targetScroll, bookWidth));
+        stage.appendChild(staticFull);
 
-        const face1 = createFace(currentScroll, 0);
-        const face2 = createFace(targetScroll, 0);
-        face2.face.classList.add('back');
-        flippingPage.appendChild(face1.face); flippingPage.appendChild(face2.face);
-        
-        partsToScroll.push({ el: face1.clone, val: currentScroll });
-        partsToScroll.push({ el: face2.clone, val: targetScroll });
+        leaf.className = 'flipping-leaf ' + (direction === 1 ? 'mobile-next' : 'mobile-prev');
+        frontFace.appendChild(createSlice(currentScroll, bookWidth));
+        backFace.appendChild(createSlice(targetScroll, bookWidth));
     }
 
-    wrapper.appendChild(flippingPage);
-    container.appendChild(wrapper);
+    leaf.appendChild(frontFace);
+    leaf.appendChild(backFace);
+    stage.appendChild(leaf);
+    container.appendChild(stage);
 
-    partsToScroll.forEach(p => p.el.scrollLeft = p.val);
+    // 隱藏原始排版容器，展示 3D 舞台
     contentEl.style.visibility = 'hidden';
 
+    // 啟動 3D 旋轉動畫
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-            flippingPage.classList.add('animating');
-            flippingPage.style.transform = direction === 1 ? 'rotateY(-180deg)' : 'rotateY(180deg)';
+            leaf.classList.add('flipped');
+            leaf.style.transform = direction === 1 ? 'rotateY(-180deg)' : 'rotateY(180deg)';
         });
     });
 
+    // 動畫結束，無縫落頁
     setTimeout(() => {
         contentEl.scrollLeft = targetScroll;
         contentEl.style.visibility = 'visible';
-        wrapper.remove();
+        stage.remove();
         isFlipping = false;
-        updateProgress(); schedulePush();
-    }, 650);
+        clearTimeout(safetyTimer);
+        updateProgress(); 
+        schedulePush();
+    }, 560);
 }
 
-// ---- Supabase & Events ----
+// ---- Supabase 雲端進度同步 ----
 async function pullCloud() {
-    if (!db || !currentUser) return;
+    if (!db || !currentUser || currentUser === '讀者') return;
     syncStatus.textContent = '↻ 同步中...';
     try {
         const { data } = await db.from('reading_progress')
@@ -265,7 +304,7 @@ async function pullCloud() {
 }
 
 function schedulePush() {
-    if (!db || !currentUser) return;
+    if (!db || !currentUser || currentUser === '讀者') return;
     if (syncTimer) clearTimeout(syncTimer);
     syncTimer = setTimeout(async () => {
         try {
@@ -279,41 +318,91 @@ function schedulePush() {
     }, 5000);
 }
 
+// ---- 事件監聽 ----
 function bindEvents() {
+    // 登入彈窗
     $('btn-login').onclick = async () => {
-        const name = $('input-username').value.trim(); if (!name) return;
-        currentUser = name; localStorage.setItem('reader_name', name); $('display-username').textContent = name;
+        const name = $('input-username').value.trim(); 
+        if (!name) return;
+        currentUser = name; 
+        localStorage.setItem('reader_name', name); 
+        $('display-username').textContent = name;
         closeAll(); 
-        pullCloud(); 
-        renderChapterList(); 
-        loadChapter(currentChapterId);
+        pullCloud();
     };
-    $('btn-logout').onclick = () => { localStorage.removeItem('reader_name'); location.reload(); };
+    $('btn-logout').onclick = () => { 
+        localStorage.removeItem('reader_name'); 
+        currentUser = '讀者';
+        $('display-username').textContent = '讀者';
+        closeAll();
+    };
 
+    // 目錄與使用者彈窗
     $('btn-menu').onclick = () => showModal(drawer);
     $('btn-user').onclick = () => showModal(userModal);
-    $('btn-close-menu').onclick = closeAll; $('btn-close-user').onclick = closeAll; overlay.onclick = closeAll;
+    $('btn-close-menu').onclick = closeAll; 
+    $('btn-close-user').onclick = closeAll; 
+    overlay.onclick = closeAll;
+    
+    // 傳統按鈕
     $('btn-prev-chap').onclick = () => { if (currentChapterId > 1) loadChapter(currentChapterId - 1); };
     $('btn-next-chap').onclick = () => { if (currentChapterId < CONFIG.chapters.length) loadChapter(currentChapterId + 1); };
 
+    // 工具列
     btnFontsize.onclick = () => { settings.fontSizeIdx = (settings.fontSizeIdx + 1) % FONT_SIZES.length; applySettings(); };
     btnLang.onclick = () => { settings.language = (settings.language === 'tw') ? 'cn' : 'tw'; applySettings(); loadChapter(currentChapterId); };
     btnFont.onclick = () => { settings.fontFamily = (settings.fontFamily === 'sans') ? 'serif' : 'sans'; applySettings(); };
     btnPage.onclick = () => { settings.mode = (settings.mode === 'scroll') ? 'page' : 'scroll'; applySettings(); };
 
-    $('zone-left').onclick = () => turnPage(-1); $('zone-right').onclick = () => turnPage(1);
+    // 全螢幕點擊翻頁（左 50% 上一頁，右 50% 下一頁）
+    $('zone-left').onclick = () => turnPage(-1); 
+    $('zone-right').onclick = () => turnPage(1);
 
+    // 鍵盤導引翻頁
     document.addEventListener('keydown', (e) => {
         if (settings.mode !== 'page') return;
-        if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); turnPage(1); }
-        if (e.key === 'ArrowLeft') { e.preventDefault(); turnPage(-1); }
+        if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { 
+            e.preventDefault(); 
+            turnPage(1); 
+        }
+        if (e.key === 'ArrowLeft' || e.key === 'PageUp') { 
+            e.preventDefault(); 
+            turnPage(-1); 
+        }
     });
+
+    // 觸控滑動翻頁 (Touch Swipe)
+    let touchStartX = 0;
+    let touchStartY = 0;
+    document.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+    document.addEventListener('touchend', (e) => {
+        if (settings.mode !== 'page') return;
+        const diffX = e.changedTouches[0].screenX - touchStartX;
+        const diffY = e.changedTouches[0].screenY - touchStartY;
+        // 橫向滑動距離大於 50px 且橫向位移大於縱向位移
+        if (Math.abs(diffX) > 50 && Math.abs(diffX) > Math.abs(diffY)) {
+            if (diffX < 0) turnPage(1);
+            else turnPage(-1);
+        }
+    }, { passive: true });
 
     window.addEventListener('scroll', () => { updateProgress(); schedulePush(); });
     contentEl.addEventListener('scroll', () => { updateProgress(); schedulePush(); });
 }
 
-function showModal(el) { closeAll(); if (el.id === 'drawer-menu') el.classList.add('open'); else el.classList.add('show'); overlay.classList.add('show'); }
-function closeAll() { drawer.classList.remove('open'); document.querySelectorAll('.modal').forEach(m => m.classList.remove('show')); if (currentUser) overlay.classList.remove('show'); }
+function showModal(el) { 
+    closeAll(); 
+    if (el.id === 'drawer-menu') el.classList.add('open'); 
+    else el.classList.add('show'); 
+    overlay.classList.add('show'); 
+}
+function closeAll() { 
+    drawer.classList.remove('open'); 
+    document.querySelectorAll('.modal').forEach(m => m.classList.remove('show')); 
+    overlay.classList.remove('show'); 
+}
 
 init();
