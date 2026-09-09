@@ -10,6 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="theme-sepia font-sans scroll-mode">
+
+    <!-- 工具列 -->
     <header id="topbar" class="toolbar">
         <button id="btn-menu" class="icon-btn" aria-label="章節目錄">☰</button>
         <div class="novel-title" id="topbar-title">彼岸仍是人間</div>
@@ -21,35 +23,76 @@
             <button id="btn-user" class="icon-btn" aria-label="我的閱讀">👤</button>
         </div>
     </header>
+
+    <!-- 閱讀進度條 -->
     <div id="progress-container"><div id="progress-bar"></div></div>
+
+    <!-- 翻頁點擊區（Page Mode 才顯示） -->
+    <div id="zone-left" class="page-click-zone left" title="上一頁"></div>
+    <div id="zone-right" class="page-click-zone right" title="下一頁"></div>
+
+    <!-- 閱讀容器（Scroll Mode / Page Mode 共用） -->
     <main id="reader-container">
-        <article id="reader-content"><div class="loading-state">載入中...</div></article>
+        <!-- Scroll Mode：顯示 article + bottom-nav -->
+        <article id="reader-content">
+            <div class="loading-state">載入中...</div>
+        </article>
         <nav class="bottom-nav">
             <button id="btn-prev-chap" class="btn">上一章</button>
             <button id="btn-next-chap" class="btn">下一章</button>
         </nav>
+        <!-- Page Mode：book-view 會由 JS 動態插入此容器 -->
     </main>
+
+    <!-- 側邊章節目錄 -->
     <div id="drawer-menu" class="drawer">
-        <div class="drawer-header"><h3>目錄</h3><button id="btn-close-menu" class="icon-btn">✕</button></div>
+        <div class="drawer-header">
+            <h3>目錄</h3>
+            <button id="btn-close-menu" class="icon-btn">✕</button>
+        </div>
         <div class="drawer-content" id="chapter-list"></div>
     </div>
-    <div id="login-modal" class="modal">
-        <div class="modal-header"><h3>歡迎閱讀</h3></div>
+
+    <!-- 首次進入：讀者暱稱輸入 -->
+    <div id="login-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="login-title" style="display: none;">
+        <div class="modal-header">
+            <h3 id="login-title">歡迎閱讀</h3>
+        </div>
         <div class="modal-content" style="text-align:center">
-            <p style="margin-bottom:20px">請輸入暱稱，系統會自動保存閱讀進度。</p>
-            <input type="text" id="input-username" placeholder="你的暱稱" style="width:100%;padding:10px;margin-bottom:20px;border:1px solid var(--border-color);border-radius:4px;background:transparent;color:var(--text-color);font-size:16px">
-            <button id="btn-login" class="btn" style="width:100%">開始閱讀</button>
+            <p style="margin-bottom:20px;color:var(--text-color);opacity:0.8;">
+                請輸入你的讀者暱稱<br>
+                <small style="font-size:0.85em;opacity:0.6;">系統會自動保存你的閱讀進度</small>
+            </p>
+            <input type="text" id="input-username" placeholder="例如：書友小明" maxlength="20"
+                style="width:80%;padding:10px 14px;border:1px solid var(--border-color);border-radius:4px;font-size:1rem;background:transparent;color:var(--text-color);outline:none;margin-bottom:20px;text-align:center;">
+            <br>
+            <button id="btn-login" class="btn" style="width:80%;padding:12px;">開始閱讀</button>
         </div>
     </div>
-    <div id="user-modal" class="modal">
-        <div class="modal-header"><h3>我的閱讀</h3><button id="btn-close-user" class="icon-btn">✕</button></div>
+
+    <!-- 我的閱讀面板 -->
+    <div id="user-modal" class="modal" style="display: none;" role="dialog" aria-modal="true">
+        <div class="modal-header">
+            <h3>我的閱讀</h3>
+            <button id="btn-close-user" class="icon-btn">✕</button>
+        </div>
         <div class="modal-content">
-            <div style="margin-bottom:20px"><strong>暱稱：</strong><span id="display-username">讀者</span></div>
-            <div style="margin-bottom:20px"><strong>同步狀態：</strong><span id="display-sync-status" style="color:#6a994e">✓ 已同步</span></div>
+            <div style="margin-bottom:20px">
+                <strong>讀者：</strong>
+                <span id="display-username">訪客</span>
+            </div>
+            <div style="margin-bottom:20px">
+                <strong>同步狀態：</strong>
+                <span id="display-sync-status" style="color:#6a994e">✓ 已同步</span>
+            </div>
             <button id="btn-logout" class="btn" style="width:100%">更換暱稱</button>
         </div>
     </div>
+
+    <!-- 遮罩 -->
     <div id="overlay" class="overlay"></div>
+
+    <!-- 腳本 -->
     <script src="js/config.js"></script>
     <script src="js/script.js"></script>
 </body>
