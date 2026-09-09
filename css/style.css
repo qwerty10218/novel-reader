@@ -187,6 +187,12 @@ body.scroll-mode #reader-container {
     margin-bottom: 1.8em; 
     text-indent: 2em; /* 滾動模式段落首行縮排 2 字符 */
 }
+#reader-content p.img-container,
+#reader-content p:has(img) {
+    text-indent: 0 !important;
+    text-align: center !important;
+    margin: 1.2em 0 1.8em 0 !important;
+}
 #reader-content h1, #reader-content h2 {
     font-family: var(--font-serif);
     color: var(--primary-color);
@@ -403,13 +409,47 @@ body.page-mode #reader-container {
     margin-bottom: 1.5em; 
     text-indent: 2em; /* 古典段落首行縮排 2 字符 */
 }
-.book-page-content p:first-child,
-.book-page-content h1 + p { 
+.book-page-content p.img-container,
+.book-page-content p:has(img),
+.book-page-content h1 + p:has(img),
+.book-page-content h1 + p.img-container {
+    text-indent: 0 !important;
+    text-align: center !important;
+    padding-right: 0 !important;
+    margin: 0.8em 0 1.2em 0 !important;
+}
+.book-page-content p:first-child:not(:has(img)),
+.book-page-content h1 + p:not(:has(img)) { 
     margin-top: 4px; 
     padding-right: 2.6em; /* 為首頁右上角「彼岸」引首章留出典雅空白，絕不疊字穿透 */
 }
 .book-page-content p:last-child {
     padding-right: 2.6em; /* 為末頁右下角「人間」壓角章保留安全留白 */
+}
+
+/* ==========================================
+   小說插圖通用排版 (修復置中、防切圖與防偏右)
+   ========================================== */
+#reader-content img,
+.book-page-content img,
+#book-view img,
+article img {
+    display: block !important;
+    max-width: 100% !important;
+    width: auto !important;
+    height: auto !important;
+    max-height: 65vh;
+    object-fit: contain !important;
+    margin: 0 auto !important;
+    border-radius: 4px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(175, 135, 75, 0.4);
+    box-sizing: border-box;
+}
+
+/* 雙頁/分頁模式下嚴格限制最大高度，避免撐破版面或切圖 */
+.book-page-content img {
+    max-height: calc(100% - 4.5em) !important;
 }
 .book-page-content h1 {
     font-family: var(--font-serif);

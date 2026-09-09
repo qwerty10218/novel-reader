@@ -219,7 +219,9 @@ async function loadChapter(id) {
         }
 
         // 語言轉換 + Markdown 解析
-        const html = marked.parse(convert(md));
+        let html = marked.parse(convert(md));
+        // 自動修復插圖段落：取消縮排、置中對齊、避免被字型首行縮排推偏
+        html = html.replace(/<p>(\s*<img[^>]+>\s*)<\/p>/gi, '<p class="img-container" style="text-indent:0 !important; text-align:center !important; margin:1.2em 0 !important; padding:0 !important;">$1</p>');
 
         // 根據模式渲染 (桌面與手機皆依據 settings.mode)
         if (settings.mode === 'page') {
@@ -493,7 +495,18 @@ function buildPages(html) {
         measurer.innerHTML = blockHTML;
         // 段落自帶 1.5em margin-bottom，需一併計入高度測量
         const pMarginBottom = fontVal * 1.5;
-        const blockH = measurer.scrollHeight + pMarginBottom;
+        let blockH = measurer.scrollHeight + pMarginBottom;
+
+        // 若區塊包含插圖，確保即使未即時載入也計算出合理的等比高度 (4:3 比例)
+        const imgEl = block.querySelector ? block.querySelector('img') : null;
+        if (imgEl) {
+            let imgRatio = 0.746; // 4:3 預設比例
+            if (imgEl.naturalWidth > 0 && imgEl.naturalHeight > 0) {
+                imgRatio = imgEl.naturalHeight / imgEl.naturalWidth;
+            }
+            const estimatedImgH = Math.min(availableH * 0.65, availableW * imgRatio);
+            blockH = Math.max(blockH, estimatedImgH + pMarginBottom);
+        }
 
         if (blockH === 0) continue;
 
