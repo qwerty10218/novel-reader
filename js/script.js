@@ -171,7 +171,21 @@ function applySettings() {
 // 語言轉換
 // ==========================================
 function convert(text) {
-    return (settings.language === 'cn' && t2s) ? t2s(text) : text;
+    if (settings.language !== 'cn') return text;
+    const dict = window.PROJECT_CONVERSION && window.PROJECT_CONVERSION.t2sPost;
+    let converted = text;
+    if (Array.isArray(dict)) {
+        dict.forEach(([from, to]) => {
+            converted = converted.split(from).join(to);
+        });
+    }
+    converted = t2s ? t2s(converted) : converted;
+    if (Array.isArray(dict)) {
+        dict.forEach(([from, to]) => {
+            converted = converted.split(from).join(to);
+        });
+    }
+    return converted;
 }
 
 // ==========================================
