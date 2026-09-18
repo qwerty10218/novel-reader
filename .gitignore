@@ -1,0 +1,19 @@
+# Local author / agent workflow files
+docs/
+SYNC_TO_GITHUB.md
+*.bat
+
+# Private planning and generated workspace artifacts
+AGENTS.md
+CODEX_HANDOFF.md
+*_PROMPT.md
+*_VOICE*.md
+*_PROTOCOL.md
+*_RULE*.md
+IMPLEMENTATION_LOG.md
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
