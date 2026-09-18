@@ -9,6 +9,7 @@ const CONFIG = {
         { id: 4, title: "第三章：暴雨夜的彼岸傳聞", file: "chapters/004.md" },
         { id: 5, title: "第四章：土皇帝與泥沙", file: "chapters/005.md" },
         { id: 6, title: "第五章：生灰的吊燈與問號", file: "chapters/006.md" },
-        { id: 7, title: "第六章：知青專列與風雪離別", file: "chapters/007.md" }
+        { id: 7, title: "第六章：知青專列與風雪離別", file: "chapters/007.md" },
+        { id: 8, title: "第七章：高原春荒與第一把鎬", file: "chapters/008.md" }
     ]
 };
