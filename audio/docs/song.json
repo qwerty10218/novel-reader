@@ -1,0 +1,48 @@
+{
+  "title": "彼岸",
+  "project": "彼岸仍是人間",
+  "type": "小說閩南語主題曲",
+  "language": "閩南語",
+  "duration": "02:56.285",
+  "master_sample_rate": 48000,
+  "master_bit_depth": 24,
+  "public_audio": {
+    "file": "../彼岸.mp3",
+    "format": "MP3",
+    "bitrate": "320 kbps CBR",
+    "sample_rate": 48000,
+    "channels": 2
+  },
+  "genres": [
+    "Dark Folk",
+    "Indie Folk Rock",
+    "Southern Min Folk Fusion",
+    "Ritual Folk"
+  ],
+  "elements": [
+    "male vocal",
+    "suona",
+    "ritual percussion",
+    "small ritual drums",
+    "gong",
+    "acoustic guitar",
+    "electric guitar",
+    "bass",
+    "organic drums"
+  ],
+  "structure": [
+    "Intro",
+    "Verse 1",
+    "Break",
+    "Build",
+    "Chorus",
+    "Verse 2",
+    "Suona Solo",
+    "Verse 2 Continued",
+    "Extended Procession",
+    "Final Chorus",
+    "Final Chorus Reprise",
+    "Instrumental Outro"
+  ],
+  "notes": "以閩南語演唱，融合祭典鼓、嗩吶與暗色調 Indie Folk Rock。正式演唱版與作者版因實際演唱重複、器樂插入與段落安排而略有差異。台羅採標準臺灣閩南語羅馬字拼音格式整理，不採 Suno performance romanization。"
+}
