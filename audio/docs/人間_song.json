@@ -1,0 +1,29 @@
+{
+  "title": "人間",
+  "project": "彼岸仍是人間",
+  "type": "小說國語歌曲",
+  "language": "國語",
+  "duration": "03:51.960",
+  "source_series": "M7_02",
+  "public_audio": {
+    "file": "../人間.mp3",
+    "format": "MP3",
+    "bitrate": "320 kbps CBR",
+    "sample_rate": 48000,
+    "channels": 2
+  },
+  "structure": [
+    "Intro",
+    "Verse 1",
+    "Verse 2",
+    "Refrain",
+    "Instrumental Interlude",
+    "Verse 3",
+    "Bridge",
+    "Refrain",
+    "Instrumental Break",
+    "Outro",
+    "Piano Outro Solo"
+  ],
+  "notes": "《人間》與閩南語歌曲《彼岸》形成對照：日光、風、麥田、榕樹、道路，以及仍在生活的人。目前公開音訊採 Final Edit 版本；此版本在不改變旋律、編曲與整體聲音的前提下，微修部分人聲句間銜接。"
+}
