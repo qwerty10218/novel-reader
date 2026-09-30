@@ -1328,7 +1328,6 @@ async function loadLyric(targetId, url) {
 
 function initLyricsUI() {
     const bianLyrics = {
-        official: 'lyrics/彼岸/正式演唱版歌詞.md',
         tw: 'lyrics/彼岸/閩南語歌詞.md',
         zh: 'lyrics/彼岸/華語版歌詞.md'
     };
@@ -1337,14 +1336,14 @@ function initLyricsUI() {
         document.querySelectorAll('.segmented [data-lyric]').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.lyric === key);
         });
-        loadLyric('lyrics-bian', bianLyrics[key] || bianLyrics.official);
+        loadLyric('lyrics-bian', bianLyrics[key] || bianLyrics.tw);
     };
 
     document.querySelectorAll('.segmented [data-lyric]').forEach(btn => {
         btn.addEventListener('click', () => setBianLyric(btn.dataset.lyric));
     });
 
-    setBianLyric('official');
+    setBianLyric('tw');
     loadLyric('lyrics-renjian', 'lyrics/人間/歌詞.md');
 }
 
