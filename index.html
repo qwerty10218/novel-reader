@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>彼岸仍是人間</title>
+    <link rel="icon" href="data:,">
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
@@ -21,6 +22,7 @@
             <button id="btn-font" class="tool-btn" aria-label="字型切換">黑</button>
             <button id="btn-page" class="tool-btn" aria-label="閱讀模式">滾</button>
             <button id="btn-fontsize" class="tool-btn" aria-label="字體大小">Aa</button>
+            <button id="btn-audio" class="icon-btn" aria-label="聲音">🔊</button>
             <button id="btn-user" class="icon-btn" aria-label="我的閱讀">👤</button>
         </div>
     </header>
@@ -38,20 +40,113 @@
         <article id="reader-content">
             <div class="loading-state">載入中...</div>
         </article>
+
         <nav class="bottom-nav">
-            <button id="btn-prev-chap" class="btn">上一章</button>
+            <button id="btn-prev-chap" class="btn" disabled>上一章</button>
             <button id="btn-next-chap" class="btn">下一章</button>
         </nav>
-        <!-- Page Mode：book-view 會由 JS 動態插入此容器 -->
     </main>
 
     <!-- 側邊章節目錄 -->
-    <div id="drawer-menu" class="drawer">
+    <div id="drawer-menu" class="drawer" aria-label="目錄">
         <div class="drawer-header">
             <h3>目錄</h3>
             <button id="btn-close-menu" class="icon-btn">✕</button>
         </div>
         <div class="drawer-content" id="chapter-list"></div>
+    </div>
+
+    <!-- 聲音面板 (Audio Drawer) -->
+    <div id="audio-panel" class="drawer" aria-label="聲音">
+        <div class="drawer-header">
+            <h3>聲音</h3>
+            <button id="btn-close-audio" class="icon-btn">✕</button>
+        </div>
+        <div class="drawer-content audio-drawer-content">
+            <div class="audio-tabs" role="tablist" aria-label="聲音分類">
+                <button id="tab-tts" class="tab-btn active" type="button" role="tab" aria-selected="true">小說朗讀</button>
+                <button id="tab-ost" class="tab-btn" type="button" role="tab" aria-selected="false">主題曲</button>
+            </div>
+
+            <div id="panel-tts" class="audio-panel-section" role="tabpanel" aria-labelledby="tab-tts">
+                <div class="audio-controls">
+                    <div class="audio-button-row">
+                        <button id="btn-tts-play" class="btn audio-primary-btn" type="button">▶ 朗讀</button>
+                        <button id="btn-tts-stop" class="btn audio-secondary-btn" type="button">■ 停止</button>
+                    </div>
+                    <div class="audio-option-row">
+                        <label class="audio-check">
+                            <input type="checkbox" id="tts-continuous"> 連續朗讀
+                        </label>
+                        <div class="audio-selects">
+                            <select id="tts-voice-select" aria-label="朗讀聲線">
+                                <option value="male">大叔音色</option>
+                                <option value="female">成熟女聲</option>
+                            </select>
+                            <select id="tts-speed-select" aria-label="朗讀速度">
+                                <option value="0.85">0.85x</option>
+                                <option value="1.0" selected>1.0x</option>
+                                <option value="1.15">1.15x</option>
+                                <option value="1.3">1.3x</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tts-progress-container" id="tts-progress-container" aria-label="朗讀進度">
+                    <div class="tts-progress-bar-bg">
+                        <div id="tts-progress-bar" class="tts-progress-bar-fill"></div>
+                    </div>
+                    <div class="tts-time-info">
+                        <span id="tts-time-current">0:00</span>
+                        <span id="tts-time-total">0:00</span>
+                    </div>
+                </div>
+
+                <div id="tts-status" class="audio-status">未載入</div>
+            </div>
+
+            <div id="panel-ost" class="audio-panel-section" role="tabpanel" aria-labelledby="tab-ost" hidden>
+                <section class="audio-card">
+                    <div class="song-header">
+                        <div>
+                            <div class="song-title">主題曲：彼岸</div>
+                            <div class="song-meta">閩南語正式成品</div>
+                        </div>
+                        <div class="segmented" aria-label="彼岸歌詞版本">
+                            <button id="btn-bian-official" class="active" type="button" data-lyric="official">正式版</button>
+                            <button id="btn-bian-tw" type="button" data-lyric="tw">閩南語</button>
+                            <button id="btn-bian-zh" type="button" data-lyric="zh">華語</button>
+                        </div>
+                    </div>
+
+                    <div class="audio-button-row">
+                        <button id="btn-ost-bian" class="btn audio-primary-btn" type="button">▶ 播放《彼岸》</button>
+                    </div>
+
+                    <div id="lyrics-bian" class="lyric-box">歌詞載入中...</div>
+                </section>
+
+                <section class="audio-card">
+                    <div class="song-header">
+                        <div>
+                            <div class="song-title">主題曲：人間</div>
+                            <div class="song-meta">國語歌曲</div>
+                        </div>
+                    </div>
+
+                    <div class="audio-button-row">
+                        <button id="btn-ost-renjian" class="btn audio-primary-btn" type="button">▶ 播放《人間》</button>
+                    </div>
+
+                    <div id="lyrics-renjian" class="lyric-box">歌詞載入中...</div>
+                </section>
+
+                <div class="media-progress" aria-label="主題曲播放進度">
+                    <div id="ost-progress-bar"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- 首次進入：讀者暱稱輸入 -->
@@ -95,6 +190,7 @@
 
     <!-- 腳本 -->
     <script src="js/config.js"></script>
+    <script src="js/audio-manager.js"></script>
     <script src="js/script.js"></script>
 </body>
 </html>

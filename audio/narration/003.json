@@ -1,0 +1,358 @@
+{
+  "paragraphs": [
+    {
+      "index": 0,
+      "textHash": "378ac75218cb12b1dd874c67209a813ab31f4ed8917fb11ffcbdb2aac8ee9600",
+      "start": 0,
+      "end": 2.95
+    },
+    {
+      "index": 1,
+      "textHash": "f798129ada01170291a81701a773e0b6aa2c0464a7c6d1e94739570410bf3e53",
+      "start": 2.95,
+      "end": 8.85
+    },
+    {
+      "index": 2,
+      "textHash": "e6e05caf7eee940f2cbb21cf04c667e7bd58711444251598033382ffba220d3c",
+      "start": 8.85,
+      "end": 20.23
+    },
+    {
+      "index": 3,
+      "textHash": "a1b972a3502de4c5f5885997f13c72b8e248a7b405ee76058e460354df7ecd25",
+      "start": 20.23,
+      "end": 36.75
+    },
+    {
+      "index": 4,
+      "textHash": "200136ed1273742adf26117a15e7d14926ac27207778860991c846c8436265ae",
+      "start": 36.75,
+      "end": 42.33
+    },
+    {
+      "index": 5,
+      "textHash": "eea484828650e8c3a2d90a86c297d7eecc4951c33874a6e29af2638215755c1e",
+      "start": 42.33,
+      "end": 48.98
+    },
+    {
+      "index": 6,
+      "textHash": "d1ab1d43d72f3013ea655ae055f321f89f871b19003f15380e2f8b72acc3bf3c",
+      "start": 48.98,
+      "end": 54.5
+    },
+    {
+      "index": 7,
+      "textHash": "9d830680d830f2063390b3572b616122b6eb72a335835113afce01cafefc5d9c",
+      "start": 54.5,
+      "end": 58.85
+    },
+    {
+      "index": 8,
+      "textHash": "7d0695f351464b2a85dff582c5488f3de93b39bbef21da892713ff4df7bb1ffe",
+      "start": 58.85,
+      "end": 64.25
+    },
+    {
+      "index": 9,
+      "textHash": "91ac4241bb9e4ff5b0e8401e611670fdcd6b6135d13a41ba02cfe3dc266cb9b1",
+      "start": 64.25,
+      "end": 69.17
+    },
+    {
+      "index": 10,
+      "textHash": "74e050f673ebe040be9a255c0a1cca73d222983ae07c02ff9f4a06ad480f50cb",
+      "start": 69.17,
+      "end": 70.38
+    },
+    {
+      "index": 11,
+      "textHash": "286b48074e52bc364107efc316b0b674e83f99a466d9d6889d93f7d1cc0ba63a",
+      "start": 70.38,
+      "end": 74.3
+    },
+    {
+      "index": 12,
+      "textHash": "806bc16a21bf4a7dc5d0d8d0cf29efc88346b93c33b9d8df10556ba6a7aa2dac",
+      "start": 74.3,
+      "end": 85.77
+    },
+    {
+      "index": 13,
+      "textHash": "3c7d7e5883572b6f1bf3e1b3981b5fa257c2cc9d4a347306cfae70454ab85f25",
+      "start": 85.77,
+      "end": 89.42
+    },
+    {
+      "index": 14,
+      "textHash": "29784fdb4601a943298e992d84e156cef2a527da52ebdc14270399a4b8a3303c",
+      "start": 89.42,
+      "end": 95.4
+    },
+    {
+      "index": 15,
+      "textHash": "00d927ac4f949f136563784b34440b9fa30ad323c422446a694c96b0db745853",
+      "start": 95.4,
+      "end": 99.87
+    },
+    {
+      "index": 16,
+      "textHash": "1eb741b33bb6d39dd08deb251ef4519212f9ea84fca4c2d82114d39dd265b185",
+      "start": 99.87,
+      "end": 104.12
+    },
+    {
+      "index": 17,
+      "textHash": "acbffae38ae51c53426399b718d53c86c0d8cd2b529c4522981847e0e08ea2ba",
+      "start": 104.12,
+      "end": 107.05
+    },
+    {
+      "index": 18,
+      "textHash": "8c0ea5018035f7adceb8b7c955e5f75a2e77cef73cbb656a3ca2506d3de65b56",
+      "start": 107.05,
+      "end": 113.07
+    },
+    {
+      "index": 19,
+      "textHash": "92538e19391d1f579d751ed62b964a935c627c09ae4283089bda40a9ab37236e",
+      "start": 113.07,
+      "end": 119.85
+    },
+    {
+      "index": 20,
+      "textHash": "db3c6728fcc954b2a3283560c9366b5716ad4da5e9b263bdf1f3a17290512773",
+      "start": 119.85,
+      "end": 120.75
+    },
+    {
+      "index": 21,
+      "textHash": "bd8477bf71bbd3a058ca6edc2b928473507f1fde1ddc5133f06eb781f3d6c44b",
+      "start": 120.75,
+      "end": 122.25
+    },
+    {
+      "index": 22,
+      "textHash": "713863a48eea96be7b504288434feaf7c1db01add57643270e7eed9ca8e4c23f",
+      "start": 122.25,
+      "end": 123.75
+    },
+    {
+      "index": 23,
+      "textHash": "79bef01f3b476d1b858cb44bf6a2c3013f1df4479e0aa9ad84267cc2cc05531e",
+      "start": 123.75,
+      "end": 128.13
+    },
+    {
+      "index": 24,
+      "textHash": "8165c7f8228da36230ea6b2c0d23db6f0bb4f65b327e4edc599ef0e11a60d295",
+      "start": 128.13,
+      "end": 129.6
+    },
+    {
+      "index": 25,
+      "textHash": "b4ddaeb4a807c0fd1bd51243f752d611ad262007f7fd7662621525ee02d9c17c",
+      "start": 129.6,
+      "end": 131.05
+    },
+    {
+      "index": 26,
+      "textHash": "4a71cbccc922d1b2e496ece03e054ed59ead0105bd49d4a46dfe17208260599d",
+      "start": 131.05,
+      "end": 137.25
+    },
+    {
+      "index": 27,
+      "textHash": "7383a949cfe209baed0ee0961945ee2b02b2b6ad1689b8d22c86a960298b7662",
+      "start": 137.25,
+      "end": 149.3
+    },
+    {
+      "index": 28,
+      "textHash": "6c6abb681309ddaa26d46a9d7ae1d7d553d3d6b7c8ea7a8f9fdb61c9cc864079",
+      "start": 149.3,
+      "end": 153.47
+    },
+    {
+      "index": 29,
+      "textHash": "0af6281e021ca0c5032a93c159b18b37103f6b6aef50ecba2fabd1164b376fa5",
+      "start": 153.47,
+      "end": 158.9
+    },
+    {
+      "index": 30,
+      "textHash": "0593fa2282f7b044141ac89eedde9ae367a1d6140fd14b2128da12f25938b60e",
+      "start": 158.9,
+      "end": 163.9
+    },
+    {
+      "index": 31,
+      "textHash": "71327a169275e4dd69604a6a2f6510d5385464d99def6005edd08c7afc921fdc",
+      "start": 163.9,
+      "end": 170.97
+    },
+    {
+      "index": 32,
+      "textHash": "6ff16f7ee6ebf9d564d3e95c07ccb533c2c3856c581b4b6d9e6f62fca74acb4b",
+      "start": 170.97,
+      "end": 179.25
+    },
+    {
+      "index": 33,
+      "textHash": "cc17e7c445bf2a694caf06abd487a790200fbcf206747a5542c158a2f4fca229",
+      "start": 179.25,
+      "end": 187.53
+    },
+    {
+      "index": 34,
+      "textHash": "fcbfb52de60855e4c474a72ce45197b0e7077767f22c6f52837ad02f35c30895",
+      "start": 187.53,
+      "end": 196.33
+    },
+    {
+      "index": 35,
+      "textHash": "274479b88dbc798e161ce8d89cf190ba5bc5d5ebf463cf672313a1ca4db6ffd0",
+      "start": 196.33,
+      "end": 213.25
+    },
+    {
+      "index": 36,
+      "textHash": "9c9eeea5bbd3af58bb2f4555ed032e46b1bc9a9e09721ea3362359f2b3de7ece",
+      "start": 213.25,
+      "end": 220.88
+    },
+    {
+      "index": 37,
+      "textHash": "dcc33c9a96965c11e4d5d3c6bf71da64e7444f21ea6f5fc9ee0ec62f8ee622fd",
+      "start": 220.88,
+      "end": 238.43
+    },
+    {
+      "index": 38,
+      "textHash": "236f26cb2df1cc49a18570d76f72ac196afe9212fb3db09b98c39466e4481b0d",
+      "start": 238.43,
+      "end": 243.15
+    },
+    {
+      "index": 39,
+      "textHash": "487c393497fc7f794bc06486c8c39de3dee2310e0d004fb42cebecda9115f256",
+      "start": 243.15,
+      "end": 258.53
+    },
+    {
+      "index": 40,
+      "textHash": "83da39b36e6b262083948010cf22611de1c9c8b3a07c4cb72deb57badf90dba4",
+      "start": 258.53,
+      "end": 261.7
+    },
+    {
+      "index": 41,
+      "textHash": "c52b5a441ab084c3d2ba0689e22948ee8c5009b7a5d6143b472733802e500bb3",
+      "start": 261.7,
+      "end": 268.25
+    },
+    {
+      "index": 42,
+      "textHash": "713f6dd33bd4009c80855706a2084a458cd6c0ee6029109326df680873f5182e",
+      "start": 268.25,
+      "end": 271.6
+    },
+    {
+      "index": 43,
+      "textHash": "3a56be25d5dee4be52c682ad158c19e1cea473c81db86b3b0e03cb66b974a12e",
+      "start": 271.6,
+      "end": 277.4
+    },
+    {
+      "index": 44,
+      "textHash": "03562c6d0498436d3c40e05cd695c9a79ac73e9c053189dd3471e5077211ec6b",
+      "start": 277.4,
+      "end": 283.03
+    },
+    {
+      "index": 45,
+      "textHash": "df61e8cc9c5b1b5b4d58f0838e84241f2da0afcb030e22b23719964559c9551b",
+      "start": 283.03,
+      "end": 283.75
+    },
+    {
+      "index": 46,
+      "textHash": "adcd1852f4fa199f774e28b659db5fc66e92767905d2e7a260d04f8740d98fc2",
+      "start": 283.75,
+      "end": 289.28
+    },
+    {
+      "index": 47,
+      "textHash": "6a2507c7c1eba7187fb1ce2bc2aa7b42c5f63366f63d6b250450fc4404ddca63",
+      "start": 289.28,
+      "end": 297.4
+    },
+    {
+      "index": 48,
+      "textHash": "c908653dd957789da3a1578efb4dfc9c192a9b1457aacb528d61140b8e7b74e7",
+      "start": 297.4,
+      "end": 303.93
+    },
+    {
+      "index": 49,
+      "textHash": "05ef21b87dc37cb48562c86431788fcd9aef21c3938015388a548889b395e07f",
+      "start": 303.93,
+      "end": 307.28
+    },
+    {
+      "index": 50,
+      "textHash": "f34c33ce6fa9ffdfe4433b76cc7611da0ae90ff47459600b5574430a81d33dfa",
+      "start": 307.28,
+      "end": 314.18
+    },
+    {
+      "index": 51,
+      "textHash": "04a5c0bc39c660a75b381357ac47e821ba7df5f665618232e8c2d3a5ff153786",
+      "start": 314.18,
+      "end": 318.78
+    },
+    {
+      "index": 52,
+      "textHash": "dd6197db55749fc57513ef73319dd370c9ced0800738048d443d2dc4ffb23a48",
+      "start": 318.78,
+      "end": 324.2
+    },
+    {
+      "index": 53,
+      "textHash": "718a51c6bfae58184d96fec3815b436bb15b898576031c7242ff54e1e80c9110",
+      "start": 324.2,
+      "end": 328.1
+    },
+    {
+      "index": 54,
+      "textHash": "05b1454d11580af83b4ed3e25038677b6a73d3244c6bdce4d4a57e6a592c2b31",
+      "start": 328.1,
+      "end": 333.83
+    },
+    {
+      "index": 55,
+      "textHash": "560c9c71fc3064a8efa3c17b55a2fb76d91c0d04eb5a26405c9bdfdb4fcb730e",
+      "start": 333.83,
+      "end": 340.45
+    },
+    {
+      "index": 56,
+      "textHash": "5467ab14484259dbb067dbd2225d363e02649d7a54f834fecaa31d91855eb867",
+      "start": 340.45,
+      "end": 356.1
+    },
+    {
+      "index": 57,
+      "textHash": "007e239f174af36210a69393fdf9b337b7aca7fa38d63f52489a1546fcddb22a",
+      "start": 356.1,
+      "end": 369.75
+    },
+    {
+      "index": 58,
+      "textHash": "4eb45a31d2ecc857e6ba106494324f900f141e5920c3e91f979908922152ba8d",
+      "start": 369.75,
+      "end": 375.25
+    }
+  ]
+}

@@ -809,3 +809,267 @@ article img {
    ========================================== */
 body.page-mode .bottom-nav { display: none; }
 body.page-mode #reader-content { display: none; } /* Scroll Mode 的 article 在 Page Mode 不顯示 */
+
+/* ==========================================
+   聲音面板、小說朗讀與主題曲
+   ========================================== */
+#audio-panel {
+    width: 420px;
+    left: -420px;
+}
+
+#audio-panel.open {
+    left: 0;
+}
+
+.audio-drawer-content {
+    padding: 16px 20px 24px;
+}
+
+.audio-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 18px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 12px 10px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-color);
+    cursor: pointer;
+    font-weight: 700;
+    opacity: 0.62;
+}
+
+.tab-btn.active {
+    border-bottom-color: #c25f49;
+    color: #8f3f30;
+    opacity: 1;
+}
+
+.audio-panel-section[hidden] {
+    display: none !important;
+}
+
+.audio-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.audio-button-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.audio-primary-btn,
+.audio-secondary-btn {
+    flex: 1;
+    padding: 10px 12px;
+}
+
+.audio-secondary-btn {
+    background: transparent;
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+.audio-option-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.95rem;
+}
+
+.audio-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.audio-check input {
+    width: 16px;
+    height: 16px;
+    accent-color: #c25f49;
+}
+
+.audio-selects {
+    display: flex;
+    gap: 6px;
+    min-width: 0;
+}
+
+.audio-selects select {
+    max-width: 120px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.audio-status {
+    margin-top: 16px;
+    min-height: 1.5em;
+    font-size: 0.9rem;
+    color: rgba(36, 29, 23, 0.65);
+    text-align: center;
+}
+
+.tts-progress-container {
+    margin-top: 22px;
+    cursor: pointer;
+}
+
+.tts-progress-bar-bg,
+.media-progress {
+    width: 100%;
+    height: 6px;
+    background: rgba(36, 29, 23, 0.12);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.tts-progress-bar-fill,
+#ost-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: #c25f49;
+    border-radius: inherit;
+    transition: width 0.12s linear;
+}
+
+.tts-time-info {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: rgba(36, 29, 23, 0.6);
+}
+
+.tts-clickable {
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.tts-clickable:hover {
+    background-color: rgba(194, 95, 73, 0.08);
+}
+
+.tts-highlight {
+    background-color: rgba(194, 95, 73, 0.18);
+    box-shadow: 0 0 0 3px rgba(194, 95, 73, 0.12);
+}
+
+.audio-card {
+    padding: 14px 0 20px;
+    border-bottom: 1px solid rgba(36, 29, 23, 0.12);
+}
+
+.audio-card + .audio-card {
+    padding-top: 20px;
+}
+
+.song-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.song-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--primary-color);
+}
+
+.song-meta {
+    margin-top: 3px;
+    font-size: 0.82rem;
+    color: rgba(36, 29, 23, 0.56);
+}
+
+.segmented {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    overflow: hidden;
+    max-width: 180px;
+}
+
+.segmented button {
+    padding: 5px 8px;
+    border: none;
+    border-left: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.segmented button:first-child {
+    border-left: none;
+}
+
+.segmented button.active {
+    background: #c25f49;
+    color: #fff8ec;
+}
+
+.lyric-box {
+    max-height: 220px;
+    overflow-y: auto;
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: rgba(36, 29, 23, 0.035);
+    color: rgba(36, 29, 23, 0.78);
+    font-size: 0.9rem;
+    line-height: 1.8;
+    white-space: pre-wrap;
+}
+
+.media-progress {
+    margin-top: 18px;
+}
+
+@media (max-width: 800px) {
+    #audio-panel {
+        width: 85vw;
+        left: -85vw;
+    }
+
+    #audio-panel.open {
+        left: 0;
+    }
+
+    .audio-option-row,
+    .song-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .audio-selects select {
+        flex: 1;
+        max-width: none;
+    }
+
+    .segmented {
+        max-width: none;
+        justify-content: flex-start;
+    }
+}

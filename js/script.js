@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // 彼岸仍是人間 - 小說閱讀器
 // 版本：功能修復版 v2.1
 // ==========================================
@@ -17,6 +17,7 @@ try { if (window.OpenCC) t2s = OpenCC.Converter({ from: 'tw', to: 'cn' }); } cat
 
 // ---- 常數 ----
 const FONT_SIZES = [18, 20, 22, 24];
+const TTS_BLOCK_SELECTOR = 'p, h1, h2, h3';
 
 // ---- 應用程式狀態 ----
 let currentChapterId = 1;
@@ -25,6 +26,8 @@ let settings = { fontSizeIdx: 0, fontFamily: 'sans', language: 'tw', mode: 'scro
 let currentUser = null;
 let syncTimer = null;
 
+// ---- 音訊管理員 ----
+const audioManager = new window.AudioManager();
 // ---- Page Mode 狀態 ----
 let pages = [];
 let currentPage = 0;
@@ -46,6 +49,8 @@ const btnLang         = $('btn-lang');
 const btnFont         = $('btn-font');
 const btnPage         = $('btn-page');
 const btnFontsize     = $('btn-fontsize');
+const btnAudio        = $('btn-audio');
+const audioPanel      = $('audio-panel');
 
 // 動態元素：每次使用前重新查詢
 function getContentEl()  { return $('reader-content'); }
@@ -57,6 +62,8 @@ function getSyncStatus() { return $('display-sync-status'); }
 // ==========================================
 async function init() {
     console.log('[Init] 開始初始化...');
+
+    initAudioUI();
 
     // Step 1: 載入設定（包含上次章節）
     loadSettings();
@@ -188,6 +195,46 @@ function convert(text) {
     return converted;
 }
 
+function getChapterAudioId(id = currentChapterId) {
+    return String(id).padStart(3, '0');
+}
+
+function buildChapterHtml(md) {
+    let html = marked.parse(convert(md));
+    html = html.replace(/<p>(\s*<img[^>]+>\s*)<\/p>/gi, '<p class="img-container" style="text-indent:0 !important; text-align:center !important; margin:1.2em 0 !important; padding:0 !important;">$1</p>');
+
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+
+    let pIdx = 0;
+    Array.from(tempDiv.querySelectorAll(TTS_BLOCK_SELECTOR)).forEach(el => {
+        const text = (el.textContent || '').trim();
+        const isFootnote = Boolean(el.closest('.footnotes'));
+        if (text.length > 0 && !isFootnote && !text.includes('載入中')) {
+            el.setAttribute('data-idx', pIdx++);
+        } else {
+            el.removeAttribute('data-idx');
+        }
+    });
+
+    return tempDiv.innerHTML;
+}
+
+async function rerenderCurrentChapter() {
+    const md = markdownCache.get(currentChapterId);
+    if (!md) {
+        await loadChapter(currentChapterId);
+        return;
+    }
+
+    const html = buildChapterHtml(md);
+    if (settings.mode === 'page') {
+        await initPageMode(html);
+    } else {
+        renderScrollMode(html);
+    }
+}
+
 // ==========================================
 // 章節目錄
 // ==========================================
@@ -213,6 +260,10 @@ async function loadChapter(id) {
     }
 
     console.log('[loadChapter] 載入章節:', id, ch.title);
+    const nextAudioId = getChapterAudioId(id);
+    if (audioManager.currentChapterId && audioManager.currentChapterId !== nextAudioId && audioManager.isPlayingTTS) {
+        audioManager.stopTTS();
+    }
     currentChapterId = id;
 
     // 顯示載入狀態
@@ -232,10 +283,7 @@ async function loadChapter(id) {
             console.log('[loadChapter] 使用快取');
         }
 
-        // 語言轉換 + Markdown 解析
-        let html = marked.parse(convert(md));
-        // 自動修復插圖段落：取消縮排、置中對齊、避免被字型首行縮排推偏
-        html = html.replace(/<p>(\s*<img[^>]+>\s*)<\/p>/gi, '<p class="img-container" style="text-indent:0 !important; text-align:center !important; margin:1.2em 0 !important; padding:0 !important;">$1</p>');
+        const html = buildChapterHtml(md);
 
         // 根據模式渲染 (桌面與手機皆依據 settings.mode)
         if (settings.mode === 'page') {
@@ -313,6 +361,7 @@ function renderScrollMode(html) {
         console.error('[renderScrollMode] #reader-content 找不到！');
     }
     updateChapterNavState();
+    if(window.attachTTSClicks) window.attachTTSClicks();
 }
 
 function updateChapterNavState() {
@@ -365,8 +414,10 @@ function ensureBookView() {
 
         bookEl = document.createElement('div');
         bookEl.id = 'book-view';
+        bookEl.className = 'book-view';
         readerContainer.appendChild(bookEl);
     }
+    bookEl.style.display = '';
     return bookEl;
 }
 
@@ -449,14 +500,14 @@ function buildPages(html) {
     const isMobile = window.innerWidth < 800;
     const pageH = getPageHeight(isMobile);
     const pageW = getPageContentWidth(isMobile);
-    
+
     // 精確對應 CSS 中的實體尺寸
     const headerH = 34; // .book-page-header 高度
     const footerH = 34; // .book-page-footer 高度
-    
+
     // .book-page-content 的 margin (10+6=16px) 與 padding (16+16=32px) 與 border (2px)
-    const contentBoxInsetV = 16 + 32 + 2; 
-    
+    const contentBoxInsetV = 16 + 32 + 2;
+
     // 安全緩衝 (預留約 1 行高度，避免字體行距與不同瀏覽器渲染誤差導致最後一行被截半)
     const safetyBuffer = 30;
 
@@ -471,7 +522,7 @@ function buildPages(html) {
     measurer.setAttribute('aria-hidden', 'true');
     const fsVal = getComputedStyle(document.documentElement).getPropertyValue('--reader-font-size').trim() || '18px';
     const fontVal = parseFloat(fsVal) || 18;
-    
+
     measurer.style.cssText = [
         'position:fixed',
         'top:-9999px',
@@ -554,23 +605,45 @@ function buildPages(html) {
 function splitLongBlock(block, availableH, measurer) {
     const text = block.textContent || '';
     const tag = block.tagName.toLowerCase();
+    const dataIdx = block.getAttribute('data-idx');
+    const attrString = dataIdx ? ` data-idx="${dataIdx}"` : '';
     const result = [];
-    let current = '';
+
+    if (!text) return [block.outerHTML];
+
     const fsVal = getComputedStyle(document.documentElement).getPropertyValue('--reader-font-size').trim() || '18px';
     const pMargin = tag === 'p' ? parseFloat(fsVal) * 1.5 : 0;
 
-    for (let i = 0; i < text.length; i++) {
-        const test = current + text[i];
-        measurer.innerHTML = `<${tag}>${test}</${tag}>`;
-        if (measurer.scrollHeight + pMargin > availableH && current.length > 0) {
-            result.push(`<${tag}>${current}</${tag}>`);
-            current = text[i];
-        } else {
-            current = test;
+    let startIndex = 0;
+    while (startIndex < text.length) {
+        let low = startIndex + 1;
+        let high = text.length;
+        let bestEnd = low;
+
+        while (low <= high) {
+            let mid = Math.floor((low + high) / 2);
+            let testStr = text.substring(startIndex, mid);
+            measurer.innerHTML = `<${tag}${attrString}>${testStr}</${tag}>`;
+
+            if (measurer.scrollHeight + pMargin <= availableH) {
+                bestEnd = mid;
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
         }
+
+        // If even one character is too tall, we must take at least one to prevent infinite loop
+        if (bestEnd === startIndex) {
+            bestEnd = startIndex + 1;
+        }
+
+        let chunk = text.substring(startIndex, bestEnd);
+        result.push(`<${tag}${attrString}>${chunk}</${tag}>`);
+        startIndex = bestEnd;
     }
-    if (current) result.push(`<${tag}>${current}</${tag}>`);
-    return result.length > 0 ? result : [block.outerHTML];
+
+    return result;
 }
 
 // 頁面可用高度 (以 DOM 實際尺寸優先，確保 100% 精準)
@@ -630,6 +703,7 @@ function renderPage(pageIdx) {
     updateProgress();
     updatePageNavState();
     localStorage.setItem('last_page_' + currentChapterId, pageIdx);
+    if(window.attachTTSClicks) window.attachTTSClicks();
 }
 
 function getPageHTML(pageIdx) {
@@ -894,7 +968,7 @@ function animateTurnPage(toPage, direction) {
         // 【桌面版】優雅宣紙翻頁（書脊紋絲不動，僅左右雙頁平滑切換）
         // ============================================================
         const currentSpread = bookEl.querySelector('.book-spread');
-        
+
         if (!currentSpread) {
             renderPage(toPage);
             currentPage = toPage;
@@ -963,7 +1037,7 @@ function animateTurnPage(toPage, direction) {
 // ==========================================
 // 模式切換
 // ==========================================
-function switchMode(newMode) {
+async function switchMode(newMode) {
     if (settings.mode === newMode) return;
     console.log('[switchMode]', settings.mode, '→', newMode);
 
@@ -971,25 +1045,11 @@ function switchMode(newMode) {
     applySettings();
 
     if (newMode === 'page') {
-        // Scroll → Page
-        const cachedMd = markdownCache.get(currentChapterId);
-        if (cachedMd) {
-            initPageMode(marked.parse(convert(cachedMd)));
-        } else {
-            loadChapter(currentChapterId);
-        }
+        await rerenderCurrentChapter();
     } else {
-        // Page → Scroll
         cleanupPageMode();
         ensureScrollView();
-
-        const cachedMd = markdownCache.get(currentChapterId);
-        if (cachedMd) {
-            const el = getContentEl();
-            if (el) el.innerHTML = marked.parse(convert(cachedMd));
-        } else {
-            loadChapter(currentChapterId);
-        }
+        await rerenderCurrentChapter();
         updateChapterNavState();
         window.scrollTo(0, 0);
     }
@@ -1087,8 +1147,10 @@ function bindEvents() {
     // ---- 目錄 / 使用者面板 ----
     $('btn-menu').onclick  = () => showModal(drawer);
     $('btn-user').onclick  = () => showModal(userModal);
+    $('btn-audio').onclick = () => showModal(audioPanel);
     $('btn-close-menu').onclick = closeAll;
     $('btn-close-user').onclick = closeAll;
+    $('btn-close-audio').onclick = closeAll;
     overlay.onclick = () => {
         // 若尚未登入且登入彈窗正在顯示，禁止點擊遮罩關閉跳過
         if (!currentUser && loginModal && loginModal.classList.contains('show')) {
@@ -1114,8 +1176,7 @@ function bindEvents() {
         settings.fontSizeIdx = (settings.fontSizeIdx + 1) % FONT_SIZES.length;
         applySettings();
         if (settings.mode === 'page') {
-            const md = markdownCache.get(currentChapterId);
-            if (md) initPageMode(marked.parse(convert(md)));
+            rerenderCurrentChapter();
         }
     };
 
@@ -1130,8 +1191,7 @@ function bindEvents() {
         settings.fontFamily = settings.fontFamily === 'sans' ? 'serif' : 'sans';
         applySettings();
         if (settings.mode === 'page') {
-            const md = markdownCache.get(currentChapterId);
-            if (md) initPageMode(marked.parse(convert(md)));
+            rerenderCurrentChapter();
         }
     };
 
@@ -1198,8 +1258,7 @@ function bindEvents() {
         if (settings.mode !== 'page') return;
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
-            const md = markdownCache.get(currentChapterId);
-            if (md) initPageMode(marked.parse(convert(md)));
+            rerenderCurrentChapter();
         }, 400);
     });
 }
@@ -1211,7 +1270,7 @@ function showModal(el) {
     if (!el) return;
     closeAll();
     overlay.classList.add('show');
-    if (el.id === 'drawer-menu') {
+    if (el.classList.contains('drawer')) {
         el.classList.add('open');
     } else {
         el.style.display = 'block'; // 明確顯示
@@ -1223,7 +1282,7 @@ function showModal(el) {
 }
 
 function closeAll() {
-    drawer.classList.remove('open');
+    document.querySelectorAll('.drawer').forEach(d => d.classList.remove('open'));
     document.querySelectorAll('.modal').forEach(m => {
         m.classList.remove('show');
         m.style.display = 'none'; // 徹底關閉，不參與圖層合成
@@ -1234,4 +1293,287 @@ function closeAll() {
 // ==========================================
 // 啟動
 // ==========================================
+
+function fmtTime(s) {
+    if (isNaN(s)) return "0:00";
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return m + ":" + (sec < 10 ? "0" : "") + sec;
+}
+
+function cleanLyricMarkdown(md) {
+    return md
+        .replace(/^>\s?.*$/gm, '')
+        .replace(/^#{1,6}\s*/gm, '')
+        .replace(/\r\n/g, '\n')
+        .replace(/[ \t]{2,}$/gm, '')
+        .trim();
+}
+
+async function loadLyric(targetId, url) {
+    const target = $(targetId);
+    if (!target) return;
+    target.textContent = '歌詞載入中...';
+
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const md = await res.text();
+        target.textContent = cleanLyricMarkdown(md);
+    } catch (e) {
+        console.warn('[Lyrics] 載入失敗:', url, e);
+        target.textContent = '歌詞暫時無法載入。';
+    }
+}
+
+function initLyricsUI() {
+    const bianLyrics = {
+        official: 'lyrics/彼岸/正式演唱版歌詞.md',
+        tw: 'lyrics/彼岸/閩南語歌詞.md',
+        zh: 'lyrics/彼岸/華語版歌詞.md'
+    };
+
+    const setBianLyric = (key) => {
+        document.querySelectorAll('.segmented [data-lyric]').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.lyric === key);
+        });
+        loadLyric('lyrics-bian', bianLyrics[key] || bianLyrics.official);
+    };
+
+    document.querySelectorAll('.segmented [data-lyric]').forEach(btn => {
+        btn.addEventListener('click', () => setBianLyric(btn.dataset.lyric));
+    });
+
+    setBianLyric('official');
+    loadLyric('lyrics-renjian', 'lyrics/人間/歌詞.md');
+}
+
+
+function bindParagraphClick() {
+    const attachClicks = () => {
+        const els = document.querySelectorAll('[data-idx]');
+        els.forEach(p => {
+            if (p.dataset.ttsBound === '1') return;
+            p.dataset.ttsBound = '1';
+            p.classList.add('tts-clickable');
+            p.addEventListener('click', () => {
+                const idx = parseInt(p.getAttribute('data-idx'));
+                const chapterAudioId = getChapterAudioId();
+                if (audioManager.currentChapterId === chapterAudioId) {
+                    audioManager.seekToParagraph(idx);
+                } else {
+                    audioManager.loadNarration(chapterAudioId).then(() => {
+                        audioManager.seekToParagraph(idx);
+                    });
+                }
+            });
+        });
+    };
+
+    attachClicks();
+    window.attachTTSClicks = attachClicks;
+
+    audioManager.onParagraphChange = (idx) => {
+        document.querySelectorAll('.tts-highlight').forEach(el => el.classList.remove('tts-highlight'));
+        if (idx === -1) return;
+
+        if (settings.mode === 'scroll') {
+            const contentEl = getContentEl();
+            const el = contentEl ? contentEl.querySelector(`[data-idx="${idx}"]`) : null;
+            if (el) {
+                el.classList.add('tts-highlight');
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        } else if (settings.mode === 'page') {
+            const targetAttr = `data-idx="${idx}"`;
+            const pageIndex = pages.findIndex(p => p.includes(targetAttr));
+
+            if (pageIndex !== -1) {
+                const isMobile = window.innerWidth < 800;
+                let isVisible = false;
+
+                if (isMobile) {
+                    isVisible = (pageIndex === currentPage);
+                } else {
+                    const leftIdx = currentPage % 2 === 0 ? currentPage : currentPage - 1;
+                    isVisible = (pageIndex === leftIdx || pageIndex === leftIdx + 1);
+                }
+
+                if (!isVisible) {
+                    currentPage = pageIndex;
+                    renderPage(currentPage);
+                }
+            }
+
+            setTimeout(() => {
+                const bookEl = getBookEl();
+                const el = bookEl ? bookEl.querySelector(`[data-idx="${idx}"]`) : null;
+                if (el) {
+                    el.classList.add('tts-highlight');
+                }
+            }, 50);
+        }
+    };
+}
+
+function initAudioUI() {
+    audioManager.initSoundtrack();
+    bindParagraphClick();
+
+    const setAudioTab = (tabName) => {
+        const isTts = tabName === 'tts';
+        $('tab-tts').classList.toggle('active', isTts);
+        $('tab-ost').classList.toggle('active', !isTts);
+        $('tab-tts').setAttribute('aria-selected', String(isTts));
+        $('tab-ost').setAttribute('aria-selected', String(!isTts));
+        $('panel-tts').hidden = !isTts;
+        $('panel-ost').hidden = isTts;
+    };
+    $('tab-tts').onclick = () => setAudioTab('tts');
+    $('tab-ost').onclick = () => setAudioTab('ost');
+    setAudioTab('tts');
+    initLyricsUI();
+
+    // TTS Controls
+    const playBtn = $('btn-tts-play');
+    if (playBtn) {
+        playBtn.onclick = () => {
+            if (audioManager.isPlayingTTS) {
+                audioManager.pauseTTS();
+            } else {
+                audioManager.playTTS(getChapterAudioId());
+            }
+        };
+    }
+
+    const stopBtn = $('btn-tts-stop');
+    if (stopBtn) stopBtn.onclick = () => audioManager.stopTTS();
+
+    const voiceSelect = $('tts-voice-select');
+    if (voiceSelect) {
+        voiceSelect.onchange = () => {
+            const wasPlaying = audioManager.isPlayingTTS;
+            audioManager.currentChapterId = null;
+            audioManager.loadNarration(getChapterAudioId()).then(() => {
+                if (wasPlaying) audioManager.playTTS(getChapterAudioId());
+            });
+        };
+    }
+
+    const speedSelect = $('tts-speed-select');
+    if (speedSelect) {
+        speedSelect.onchange = (e) => {
+            audioManager.speed = parseFloat(e.target.value) || 1;
+        };
+        audioManager.speed = parseFloat(speedSelect.value) || 1;
+    }
+
+    const continuousCheck = $('tts-continuous');
+    if (continuousCheck) {
+        continuousCheck.onchange = (e) => {
+            audioManager.continuous = e.target.checked;
+        };
+        audioManager.continuous = continuousCheck.checked;
+    }
+
+    const progressContainer = $('tts-progress-container');
+    if (progressContainer) {
+        progressContainer.onclick = (e) => {
+            if (audioManager.narration && audioManager.narration.duration) {
+                const rect = progressContainer.getBoundingClientRect();
+                const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                audioManager.narration.currentTime = pct * audioManager.narration.duration;
+            }
+        };
+    }
+
+    // OST Controls
+    const toggleOst = (url, name) => {
+        if (audioManager.currentSong === name && !audioManager.soundtrack.paused) {
+            audioManager.pauseSong();
+        } else {
+            audioManager.playSong(url, name);
+        }
+    };
+
+    const btnOstBian = $('btn-ost-bian');
+    const btnOstRenjian = $('btn-ost-renjian');
+    if (btnOstBian) btnOstBian.onclick = () => toggleOst('audio/彼岸/彼岸.mp3', '彼岸');
+    if (btnOstRenjian) btnOstRenjian.onclick = () => toggleOst('audio/人間/人間.mp3', '人間');
+
+    audioManager.onNeedsPreload = () => {
+        const nextId = currentChapterId + 1;
+        if (CONFIG.chapters.find(c => c.id === nextId)) {
+            audioManager.preloadNextNarration(String(nextId).padStart(3, '0'));
+        }
+    };
+
+    audioManager.onSongStateChange = (state, current, total) => {
+        if (state === 'playing') {
+            if (btnOstBian) btnOstBian.textContent = audioManager.currentSong === '彼岸' ? '⏸ 暫停《彼岸》' : '▶ 播放《彼岸》';
+            if (btnOstRenjian) btnOstRenjian.textContent = audioManager.currentSong === '人間' ? '⏸ 暫停《人間》' : '▶ 播放《人間》';
+        } else if (state === 'paused' || state === 'ended') {
+            if (btnOstBian) btnOstBian.textContent = '▶ 播放《彼岸》';
+            if (btnOstRenjian) btnOstRenjian.textContent = '▶ 播放《人間》';
+            if (state === 'ended') {
+                const bar = $('ost-progress-bar');
+                if (bar) bar.style.width = '0%';
+            }
+        } else if (state === 'error') {
+            if (btnOstBian) btnOstBian.textContent = '▶ 播放《彼岸》';
+            if (btnOstRenjian) btnOstRenjian.textContent = '▶ 播放《人間》';
+        } else if (state === 'timeupdate') {
+            const pct = Number.isFinite(total) && total > 0 ? (current / total) * 100 : 0;
+            const bar = $('ost-progress-bar');
+            if (bar) bar.style.width = pct + '%';
+        }
+    };
+
+    audioManager.onTTSStateChange = (state, current, total) => {
+        const st = $('tts-status');
+
+        if (state === 'loading') {
+            if(st) st.textContent = '正在載入音檔...';
+        } else if (state === 'ready') {
+            if(st) st.textContent = '音檔已就緒';
+            if(playBtn) playBtn.textContent = '▶ 朗讀';
+        } else if (state === 'error') {
+            if(st) st.textContent = '載入失敗，請確認是否已產生語音。';
+            if(playBtn) playBtn.textContent = '▶ 朗讀';
+        } else if (state === 'playing') {
+            if(st) st.textContent = '朗讀中...';
+            if(playBtn) playBtn.textContent = '⏸ 暫停';
+        } else if (state === 'paused') {
+            if(st) st.textContent = '已暫停';
+            if(playBtn) playBtn.textContent = '▶ 朗讀';
+        } else if (state === 'stopped') {
+            if(st) st.textContent = '已停止';
+            if(playBtn) playBtn.textContent = '▶ 朗讀';
+        } else if (state === 'ended_continuous') {
+            if(st) st.textContent = '準備進入下一章...';
+            if (currentChapterId < CONFIG.chapters.length) {
+                const nextId = currentChapterId + 1;
+                loadChapter(nextId).then(() => {
+                    audioManager.playTTS(getChapterAudioId(nextId));
+                });
+            } else {
+                if(st) st.textContent = '已朗讀完畢';
+                if(playBtn) playBtn.textContent = '▶ 朗讀';
+            }
+        } else if (state === 'ended') {
+            if(st) st.textContent = '完畢';
+            if(playBtn) playBtn.textContent = '▶ 朗讀';
+        } else if (state === 'timeupdate') {
+            const pct = Number.isFinite(total) && total > 0 ? (current / total) * 100 : 0;
+            const bar = $('tts-progress-bar');
+            if (bar) bar.style.width = pct + '%';
+
+            const curEl = $('tts-time-current');
+            const totEl = $('tts-time-total');
+            if (curEl) curEl.textContent = fmtTime(current);
+            if (totEl) totEl.textContent = fmtTime(total);
+        }
+    };
+}
+
 init();
