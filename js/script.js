@@ -1356,15 +1356,17 @@ function bindParagraphClick() {
             if (p.dataset.ttsBound === '1') return;
             p.dataset.ttsBound = '1';
             p.classList.add('tts-clickable');
-            p.addEventListener('click', () => {
+            p.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 const idx = parseInt(p.getAttribute('data-idx'));
                 const chapterAudioId = getChapterAudioId();
+                if (Number.isNaN(idx)) return;
                 if (audioManager.currentChapterId === chapterAudioId) {
-                    audioManager.seekToParagraph(idx);
+                    await audioManager.seekToParagraph(idx);
                 } else {
-                    audioManager.loadNarration(chapterAudioId).then(() => {
-                        audioManager.seekToParagraph(idx);
-                    });
+                    const ok = await audioManager.loadNarration(chapterAudioId);
+                    if (ok) await audioManager.seekToParagraph(idx);
                 }
             });
         });

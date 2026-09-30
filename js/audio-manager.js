@@ -12,6 +12,7 @@
         this.narrationData = null; // paragraphs JSON
         this.currentChapterId = null;
         this.voiceSpeed = 1.0;
+        this.audioBlobUrls = new Map();
 
         // Next chapter preload (Cache warming only)
         this.nextNarration = new Audio();
@@ -118,7 +119,7 @@
             if (!res.ok) throw new Error('找不到朗讀資料');
             this.narrationData = await res.json();
 
-            this.narration.src = audioUrl;
+            this.narration.src = await this.getNarrationAudioSrc(audioUrl);
             this.narration.load();
             this.narration.playbackRate = this.speed;
 
@@ -145,6 +146,19 @@
             if (this.onTTSStateChange) this.onTTSStateChange('error');
             return false;
         }
+    }
+
+    async getNarrationAudioSrc(audioUrl) {
+        if (this.audioBlobUrls.has(audioUrl)) {
+            return this.audioBlobUrls.get(audioUrl);
+        }
+
+        const res = await fetch(audioUrl);
+        if (!res.ok) throw new Error('找不到朗讀音檔');
+        const blob = await res.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        this.audioBlobUrls.set(audioUrl, objectUrl);
+        return objectUrl;
     }
 
     preloadNextNarration(nextChapterId) {
@@ -196,13 +210,73 @@
         if(this.onParagraphChange) this.onParagraphChange(-1);
     }
 
-    seekToParagraph(idx) {
-        if (!this.narrationData || !this.narrationData.paragraphs) return;
+    async waitForNarrationReady() {
+        if (this.narration.readyState >= 1) return true;
+
+        return new Promise((resolve, reject) => {
+            const cleanup = () => {
+                this.narration.removeEventListener('loadedmetadata', onReady);
+                this.narration.removeEventListener('canplay', onReady);
+                this.narration.removeEventListener('error', onError);
+            };
+            const onReady = () => {
+                cleanup();
+                resolve(true);
+            };
+            const onError = () => {
+                cleanup();
+                reject(new Error('音檔尚未載入，無法定位段落'));
+            };
+
+            this.narration.addEventListener('loadedmetadata', onReady, { once: true });
+            this.narration.addEventListener('canplay', onReady, { once: true });
+            this.narration.addEventListener('error', onError, { once: true });
+            this.narration.load();
+        });
+    }
+
+    async seekNarrationTime(targetTime) {
+        await this.waitForNarrationReady();
+        const audio = this.narration;
+        const target = Math.max(0, Number(targetTime) || 0);
+
+        audio.pause();
+        audio.currentTime = target;
+
+        if (Math.abs(audio.currentTime - target) < 0.35) return true;
+
+        return new Promise((resolve) => {
+            const done = () => {
+                cleanup();
+                resolve(true);
+            };
+            const cleanup = () => {
+                audio.removeEventListener('seeked', done);
+                audio.removeEventListener('timeupdate', check);
+                clearTimeout(timer);
+            };
+            const check = () => {
+                if (Math.abs(audio.currentTime - target) < 0.6) done();
+            };
+            const timer = setTimeout(done, 900);
+
+            audio.addEventListener('seeked', done, { once: true });
+            audio.addEventListener('timeupdate', check);
+        });
+    }
+
+    async seekToParagraph(idx) {
+        if (!this.narrationData || !this.narrationData.paragraphs) return false;
         const p = this.narrationData.paragraphs.find(p => p.index === idx);
         if (p) {
-            this.narration.currentTime = p.start;
-            this.playTTS();
+            const targetTime = Math.max(0, Number(p.start) || 0);
+            await this.seekNarrationTime(targetTime);
+            this.currentParagraphIndex = idx;
+            if (this.onParagraphChange) this.onParagraphChange(idx);
+            await this.playTTS();
+            return true;
         }
+        return false;
     }
 
     handleNarrationTimeUpdate() {
